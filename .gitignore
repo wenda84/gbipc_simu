@@ -1,0 +1,7 @@
+.buildtmp/
+.workbuddy/
+_doc/
+dist/
+*__pycache__/
+*pyc
+*.log

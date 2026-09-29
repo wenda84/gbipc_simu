@@ -1,0 +1,1005 @@
+
+########## resource/pcap/IPC注册.pcap ##########
+total packets: 15082
+
+----- #1 t=+0.921s 172.220.0.97:57524 -> 172.220.0.178:5080 len=16
+....#19601780043
+
+----- #2 t=+0.923s 172.220.0.178:5080 -> 172.220.0.97:57524 len=16
+....#19601780043
+
+----- #3 t=+3.606s 172.220.0.85:8054 -> 172.220.0.178:5080 len=17
+.....t19601780002
+
+----- #4 t=+3.608s 172.220.0.178:5080 -> 172.220.0.85:8054 len=17
+.....t19601780002
+
+----- #5 t=+4.649s 172.220.0.178:5080 -> 172.220.0.85:8054 len=654
+MESSAGE sip:19601780002@172.220.0.85:8054 SIP/2.0
+User-Agent: V7.19.90.B03
+Content-Type: text/plain
+Content-Length:  153
+Ptx-Extension: ptxvssstorage
+Call-ID: C9oQQFuSXPBJGFWa0vMyfL71_Lj2nwpsUEZ_G3qwsROhB31hgja@ssg
+From: <sip:mdcs@172.220.0.178:5080>;tag=ssgwzfkgy8NoMM*3-1-18708*fdcc.3
+To: "zwd eChat DAC"<sip:19601780002@172.220.0.85:8054>;utype=4
+CSeq: 100 MESSAGE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4700-15-345*MyIv6-Y69arsF4yF1iaaf.3;rport
+
+{"vssinfo":[{"total":228236,"remain":80745,"ip":"172.220.0.178","warning":10240,"threshold":500,"id":"9bf50396-4eb6-43a6-aa82-68634fd9df28","status":0}]}
+
+----- #6 t=+4.654s 172.220.0.85:8054 -> 172.220.0.178:5080 len=411
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4700-15-345*MyIv6-Y69arsF4yF1iaaf.3;rport=5080
+From: <sip:mdcs@172.220.0.178:5080>;tag=ssgwzfkgy8NoMM*3-1-18708*fdcc.3
+To: "zwd eChat DAC" <sip:19601780002@172.220.0.85:8054>;utype=4;tag=3719124327
+Call-ID: C9oQQFuSXPBJGFWa0vMyfL71_Lj2nwpsUEZ_G3qwsROhB31hgja@ssg
+CSeq: 100 MESSAGE
+User-Agent: MDSCLIENT;UDP
+Content-Length: 0
+
+----- #7 t=+6.654s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #8 t=+17.436s 172.220.0.178:5080 -> 172.220.0.52:5080 len=680
+MESSAGE sip:34020100002000000052@172.220.0.52:5080 SIP/2.0
+User-Agent: V7.19.90.B03
+Content-Type: application/MANSCDP+xml
+Content-Length:  178
+Call-ID: -BJa7Z5Akb3LuJwkWPTjYV8QlR1hgjb@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzf1-c2OqGnFmh8vlNovaV*3-1-18708*fdce.3
+To: "mds52"<sip:34020100002000000052@172.220.0.52:5080>;utype=20
+CSeq: 100 MESSAGE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4702-15-458*OAKuqNWB3Y6RSVbQ1iaag.3;rport
+
+<?xml version="1.0" encoding="GBK"?>
+<Notify>
+  <CmdType>Keepalive</CmdType>
+  <SN>4327</SN>
+  <DeviceID>34020100002000000178</DeviceID>
+  <Status>OK</Status>
+</Notify>
+
+----- #9 t=+17.478s 172.220.0.52:5080 -> 172.220.0.178:5080 len=472
+SIP/2.0 200 OK
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzf1-c2OqGnFmh8vlNovaV*3-1-18708*fdce.3
+Call-ID: -BJa7Z5Akb3LuJwkWPTjYV8QlR1hgjb@ssg
+CSeq: 100 MESSAGE
+User-Agent: V7.19.90.B03
+Via: SIP/2.0/UDP 172.220.0.178:5080;received=172.220.0.178;branch=z9hG4bK*3-1-18708-4702-15-458*OAKuqNWB3Y6RSVbQ1iaag.3;rport=5080
+To: "mds52"<sip:34020100002000000052@172.220.0.52:5080>;tag=ssgwzfxZGh7qNJBzBvw1x*3-1-18708*iecf.3;utype=20
+Content-Length:    0
+
+----- #10 t=+24.655s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #11 t=+27.462s 172.220.0.97:55018 -> 172.220.0.178:5080 len=16
+....�19601780042
+
+----- #12 t=+27.464s 172.220.0.178:5080 -> 172.220.0.97:55018 len=16
+....�19601780042
+
+----- #13 t=+41.665s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #14 t=+45.960s 172.220.0.97:57524 -> 172.220.0.178:5080 len=16
+....$19601780043
+
+----- #15 t=+45.962s 172.220.0.178:5080 -> 172.220.0.97:57524 len=16
+....$19601780043
+
+----- #16 t=+48.607s 172.220.0.85:8054 -> 172.220.0.178:5080 len=17
+.....u19601780002
+
+----- #17 t=+48.608s 172.220.0.178:5080 -> 172.220.0.85:8054 len=17
+.....u19601780002
+
+----- #18 t=+59.615s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #19 t=+64.727s 172.220.0.178:5080 -> 172.220.0.85:8054 len=635
+MESSAGE sip:19601780002@172.220.0.85:8054 SIP/2.0
+User-Agent: V7.19.90.B03
+Content-Type: text/plain
+Content-Length:  153
+Ptx-Extension: ptxvssstorage
+Call-ID: oD2cfeISqnnwlXGHL0ABbbA0CRK2XyI_zeP1hgjc@ssg
+From: <sip:mdcs@172.220.0.178:5080>;tag=ssgwzf1F8mtBzr*3-1-18708*fdcj.3
+To: "zwd eChat DAC"<sip:19601780002@172.220.0.85:8054>;utype=4
+CSeq: 100 MESSAGE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4707-15-663*dOmvoxpG1iaah.3;rport
+
+{"vssinfo":[{"total":228236,"remain":80745,"ip":"172.220.0.178","warning":10240,"threshold":500,"id":"9bf50396-4eb6-43a6-aa82-68634fd9df28","status":0}]}
+
+----- #20 t=+64.731s 172.220.0.85:8054 -> 172.220.0.178:5080 len=391
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4707-15-663*dOmvoxpG1iaah.3;rport=5080
+From: <sip:mdcs@172.220.0.178:5080>;tag=ssgwzf1F8mtBzr*3-1-18708*fdcj.3
+To: "zwd eChat DAC" <sip:19601780002@172.220.0.85:8054>;utype=4;tag=823833346
+Call-ID: oD2cfeISqnnwlXGHL0ABbbA0CRK2XyI_zeP1hgjc@ssg
+CSeq: 100 MESSAGE
+User-Agent: MDSCLIENT;UDP
+Content-Length: 0
+
+----- #21 t=+72.516s 172.220.0.97:55018 -> 172.220.0.178:5080 len=16
+....�19601780042
+
+----- #22 t=+72.518s 172.220.0.178:5080 -> 172.220.0.97:55018 len=16
+....�19601780042
+
+----- #23 t=+76.731s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #24 t=+77.436s 172.220.0.178:5080 -> 172.220.0.52:5080 len=684
+MESSAGE sip:34020100002000000052@172.220.0.52:5080 SIP/2.0
+User-Agent: V7.19.90.B03
+Content-Type: application/MANSCDP+xml
+Content-Length:  178
+Call-ID: fiB1xnvV7V6Ek8NmYYi0mvmKw7c147acpCcAJ1hgjd@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfvX2cZFmKWcEeviTVkkdB*3-1-18708*fddb.3
+To: "mds52"<sip:34020100002000000052@172.220.0.52:5080>;utype=20
+CSeq: 100 MESSAGE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4709-15-590*CYHWIEMh1iaai.3;rport
+
+<?xml version="1.0" encoding="GBK"?>
+<Notify>
+  <CmdType>Keepalive</CmdType>
+  <SN>4328</SN>
+  <DeviceID>34020100002000000178</DeviceID>
+  <Status>OK</Status>
+</Notify>
+
+----- #25 t=+77.459s 172.220.0.52:5080 -> 172.220.0.178:5080 len=470
+SIP/2.0 200 OK
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfvX2cZFmKWcEeviTVkkdB*3-1-18708*fddb.3
+Call-ID: fiB1xnvV7V6Ek8NmYYi0mvmKw7c147acpCcAJ1hgjd@ssg
+CSeq: 100 MESSAGE
+User-Agent: V7.19.90.B03
+Via: SIP/2.0/UDP 172.220.0.178:5080;received=172.220.0.178;branch=z9hG4bK*3-1-18708-4709-15-590*CYHWIEMh1iaai.3;rport=5080
+To: "mds52"<sip:34020100002000000052@172.220.0.52:5080>;tag=ssgwzfPosJhbpLu*3-1-18708*iefa.3;utype=20
+Content-Length:    0
+
+----- #26 t=+91.013s 172.220.0.97:57524 -> 172.220.0.178:5080 len=16
+....%19601780043
+
+----- #27 t=+91.015s 172.220.0.178:5080 -> 172.220.0.97:57524 len=16
+....%19601780043
+
+----- #28 t=+93.608s 172.220.0.85:8054 -> 172.220.0.178:5080 len=17
+.....v19601780002
+
+----- #29 t=+93.610s 172.220.0.178:5080 -> 172.220.0.85:8054 len=17
+.....v19601780002
+
+----- #30 t=+96.740s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #31 t=+113.748s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #32 t=+117.813s 172.220.0.97:55018 -> 172.220.0.178:5080 len=16
+....�19601780042
+
+----- #33 t=+117.815s 172.220.0.178:5080 -> 172.220.0.97:55018 len=16
+....�19601780042
+
+----- #34 t=+124.807s 172.220.0.178:5080 -> 172.220.0.85:8054 len=662
+MESSAGE sip:19601780002@172.220.0.85:8054 SIP/2.0
+User-Agent: V7.19.90.B03
+Content-Type: text/plain
+Content-Length:  153
+Ptx-Extension: ptxvssstorage
+Call-ID: wkIX-gQI8mTzz5Fk3kQcbC_GSuMbRQL6q9JqQTCAYJzlLW2AZDV1hgje@ssg
+From: <sip:mdcs@172.220.0.178:5080>;tag=ssgwzfyap9jog_rXOX6AVt-za*3-1-18708*fddi.3
+To: "zwd eChat DAC"<sip:19601780002@172.220.0.85:8054>;utype=4
+CSeq: 100 MESSAGE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4716-15-589*QRV61tgn1iaaj.3;rport
+
+{"vssinfo":[{"total":228236,"remain":80743,"ip":"172.220.0.178","warning":10240,"threshold":500,"id":"9bf50396-4eb6-43a6-aa82-68634fd9df28","status":0}]}
+
+----- #35 t=+124.808s 172.220.0.85:8054 -> 172.220.0.178:5080 len=419
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4716-15-589*QRV61tgn1iaaj.3;rport=5080
+From: <sip:mdcs@172.220.0.178:5080>;tag=ssgwzfyap9jog_rXOX6AVt-za*3-1-18708*fddi.3
+To: "zwd eChat DAC" <sip:19601780002@172.220.0.85:8054>;utype=4;tag=4282691074
+Call-ID: wkIX-gQI8mTzz5Fk3kQcbC_GSuMbRQL6q9JqQTCAYJzlLW2AZDV1hgje@ssg
+CSeq: 100 MESSAGE
+User-Agent: MDSCLIENT;UDP
+Content-Length: 0
+
+----- #36 t=+130.808s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #37 t=+136.086s 172.220.0.97:57524 -> 172.220.0.178:5080 len=16
+....&19601780043
+
+----- #38 t=+136.088s 172.220.0.178:5080 -> 172.220.0.97:57524 len=16
+....&19601780043
+
+----- #39 t=+137.436s 172.220.0.178:5080 -> 172.220.0.52:5080 len=711
+MESSAGE sip:34020100002000000052@172.220.0.52:5080 SIP/2.0
+User-Agent: V7.19.90.B03
+Content-Type: application/MANSCDP+xml
+Content-Length:  178
+Call-ID: OWAhZh0ytUR1apsO276k_GguDtTF4kKKP2KiwWevOkjl2i9xi3iIYE_nEmt52r1hgjf@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfrHAE3LuETUsHY1VJId-zVo*3-1-18708*fded.3
+To: "mds52"<sip:34020100002000000052@172.220.0.52:5080>;utype=20
+CSeq: 100 MESSAGE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4721-15-648*eLevhVXQ1iaba.3;rport
+
+<?xml version="1.0" encoding="GBK"?>
+<Notify>
+  <CmdType>Keepalive</CmdType>
+  <SN>4329</SN>
+  <DeviceID>34020100002000000178</DeviceID>
+  <Status>OK</Status>
+</Notify>
+
+----- #40 t=+137.459s 172.220.0.52:5080 -> 172.220.0.178:5080 len=496
+SIP/2.0 200 OK
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfrHAE3LuETUsHY1VJId-zVo*3-1-18708*fded.3
+Call-ID: OWAhZh0ytUR1apsO276k_GguDtTF4kKKP2KiwWevOkjl2i9xi3iIYE_nEmt52r1hgjf@ssg
+CSeq: 100 MESSAGE
+User-Agent: V7.19.90.B03
+Via: SIP/2.0/UDP 172.220.0.178:5080;received=172.220.0.178;branch=z9hG4bK*3-1-18708-4721-15-648*eLevhVXQ1iaba.3;rport=5080
+To: "mds52"<sip:34020100002000000052@172.220.0.52:5080>;tag=ssgwzf8eVMmNI2*3-1-18708*iehd.3;utype=20
+Content-Length:    0
+
+----- #41 t=+138.609s 172.220.0.85:8054 -> 172.220.0.178:5080 len=17
+.....w19601780002
+
+----- #42 t=+138.611s 172.220.0.178:5080 -> 172.220.0.85:8054 len=17
+.....w19601780002
+
+----- #43 t=+156.819s 172.220.0.85:8054 -> 172.220.0.178:5080 len=4
+
+
+----- #44 t=+159.890s 172.220.20.246:5060 -> 172.220.0.178:5080 len=422
+REGISTER sip:34020100002000000178@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.20.246:5060;rport;branch=z9hG4bK694695558
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1406081668
+To: <sip:32128401001311782461@172.220.0.178:5080>
+Call-ID: 1424666132
+CSeq: 1 REGISTER
+Contact: <sip:32128401001311782461@172.220.20.246:5060>
+Max-Forwards: 70
+User-Agent: IP Camera
+Expires: 3600
+Content-Length: 0
+
+----- #45 t=+159.892s 172.220.0.178:5080 -> 172.220.20.246:5060 len=568
+SIP/2.0 401 Unauthorized
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1406081668
+Call-ID: 1424666132
+CSeq: 1 REGISTER
+User-Agent: V7.19.90.B03
+Contact: <sip:32128401001311782461@172.220.20.246:5060>
+WWW-Authenticate: Digest realm="auth",nonce="a1110bd6c422453f8194da7ddc430e18",opaque="8e9ee55758134187878c3d46824d737e",qop="auth,auth-int"
+Via: SIP/2.0/UDP 172.220.20.246:5060;received=172.220.20.246;branch=z9hG4bK694695558;rport=5060
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzfIP680jrJCy*3-1-18708*fdef.3
+Content-Length:    0
+
+----- #46 t=+159.895s 172.220.20.246:5060 -> 172.220.0.178:5080 len=729
+REGISTER sip:34020100002000000178@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.20.246:5060;rport;branch=z9hG4bK774949766
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1406081668
+To: <sip:32128401001311782461@172.220.0.178:5080>
+Call-ID: 1424666132
+CSeq: 2 REGISTER
+Contact: <sip:32128401001311782461@172.220.20.246:5060>
+Authorization: Digest username="32128401001311782461", realm="auth", nonce="a1110bd6c422453f8194da7ddc430e18", uri="sip:34020100002000000178@172.220.0.178:5080", response="f9a211ec91cc186e0deb97fca111f19c", algorithm=MD5, cnonce="0a4f113b", opaque="8e9ee55758134187878c3d46824d737e", qop=auth, nc=00000001
+Max-Forwards: 70
+User-Agent: IP Camera
+Expires: 3600
+Content-Length: 0
+
+----- #47 t=+159.899s 172.220.0.178:5080 -> 172.220.20.246:5060 len=484
+SIP/2.0 200 OK
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1406081668
+Call-ID: 1424666132
+CSeq: 2 REGISTER
+Date: 2026-09-20T15:20:34.592
+User-Agent: V7.19.90.B03
+Contact: <sip:32128401001311782461@172.220.20.246:5060>;expires=3600
+Expires: 3600
+Via: SIP/2.0/UDP 172.220.20.246:5060;received=172.220.20.246;branch=z9hG4bK774949766;rport=5060
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzfvfxU1ErZpJGSS--FmQq*3-1-18708*fdeg.3
+Content-Length:    0
+
+----- #48 t=+159.900s 172.220.0.178:5080 -> 172.220.0.85:8054 len=35
+�. ...�.....32128401001311782461...
+
+----- #49 t=+159.900s 172.220.0.85:8054 -> 172.220.0.178:5080 len=7
+�.....�
+
+----- #50 t=+159.901s 172.220.0.178:5080 -> 172.220.0.52:5080 len=1282
+NOTIFY sip:172.220.0.52:5080 SIP/2.0
+Call-ID: WrDFBqM_hcPD3VJYYBtfmpVigCvQDEeeC8m--4dhpP4DI3Vhb6e-2J1igda@ssg
+To: <sip:34020100002000000052@172.220.0.52:5080>;tag=ssgwzfnxj_DnZs_3w3p6zd*3-1-18708*echg.3
+From: "34020100002000000178"<sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfwjg7cQadyV*3-1-18708*chfg.3;utype=20
+CSeq: 102 NOTIFY
+Subscription-State: active;expires = 353
+User-Agent: V7.19.90.B03
+Content-Type: application/MANSCDP+xml
+Content-Length:  647
+Event: Catalog
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-3-21-599*7SwLc7e12y1iabb.3
+Contact: <sip:172.220.0.178:5080>
+
+<?xml version="1.0" encoding="GBK"?>
+<Notify>
+  <CmdType>Catalog</CmdType>
+  <SN>32</SN>
+  <DeviceID>34020100002000000178</DeviceID>
+  <SumNum>1</SumNum>
+  <DeviceList Num="1">
+    <Item>
+      <DeviceID>32128401001311782461</DeviceID>
+      <Name>ipc_178_246_gb</Name>
+      <Manufacturer>Hikvision</Manufacturer>
+      <Model>DS-2CD7D27DWD-IZSW</Model>
+      <Owner />
+      <CivilCode>32</CivilCode>
+      <Address />
+      <Parental>0</Parental>
+      <ParentID>34020100002000000178</ParentID>
+      <Event>ON</Event>
+      <RegisterWay>1</RegisterWay>
+      <Secrecy>0</Secrecy>
+    </Item>
+  </DeviceList>
+</Notify>
+
+----- #51 t=+159.901s 172.220.0.178:5080 -> 172.220.20.246:5060 len=685
+MESSAGE sip:32128401001311782461@172.220.20.246:5060 SIP/2.0
+User-Agent: V7.19.90.B03
+Content-Type: application/MANSCDP+xml
+Content-Length:  152
+Call-ID: R39nYapO7pyZUnSfm-0U4Qn3QUjUo0wBpxhucKS3yAM1u64sd4LHNxVA-ld1hgjg@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzf9M83Z1g_*3-1-18708*fdeh.3
+To: "ipc_178_246_gb"<sip:32128401001311782461@172.220.20.246:5060>;utype=5
+CSeq: 100 MESSAGE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4725-15-631*SDmR401jahISN1iabc.3;rport
+
+<?xml version="1.0" encoding="GBK"?>
+<Query>
+  <CmdType>DeviceInfo</CmdType>
+  <SN>33</SN>
+  <DeviceID>32128401001311782461</DeviceID>
+</Query>
+
+----- #52 t=+159.911s 172.220.20.246:5060 -> 172.220.0.178:5080 len=445
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-4725-15-631*SDmR401jahISN1iabc.3;rport=5080
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzf9M83Z1g_*3-1-18708*fdeh.3
+To: "ipc_178_246_gb" <sip:32128401001311782461@172.220.20.246:5060>;utype=5;tag=1030127903
+Call-ID: R39nYapO7pyZUnSfm-0U4Qn3QUjUo0wBpxhucKS3yAM1u64sd4LHNxVA-ld1hgjg@ssg
+CSeq: 100 MESSAGE
+User-Agent: IP Camera
+Content-Length: 0
+
+----- #53 t=+159.912s 172.220.20.246:5060 -> 172.220.0.178:5080 len=726
+MESSAGE sip:34020100002000000178@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.20.246:5060;rport;branch=z9hG4bK1339855036
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1601502179
+To: <sip:34020100002000000178@172.220.0.178:5080>
+Call-ID: 1325934908
+CSeq: 20 MESSAGE
+Content-Type: Application/MANSCDP+xml
+Max-Forwards: 70
+User-Agent: IP Camera
+Content-Length:   333
+
+<?xml version="1.0" encoding="GB2312"?>
+<Response>
+<CmdType>DeviceInfo</CmdType>
+<SN>33</SN>
+<DeviceID>32128401001311782461</DeviceID>
+<Result>OK</Result>
+<DeviceName>����iPC_1080P 264</DeviceName>
+<Manufacturer>Hikvision</Manufacturer>
+<Model>DS-2CD7D27DWD-IZSW</Model>
+<Firmware>V5.5.81</Firmware>
+<Channel>1</Channel>
+</Response>
+
+----- #54 t=+159.932s 172.220.0.178:5080 -> 172.220.20.246:5060 len=374
+SIP/2.0 200 OK
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1601502179
+Call-ID: 1325934908
+CSeq: 20 MESSAGE
+User-Agent: V7.19.90.B03
+Via: SIP/2.0/UDP 172.220.20.246:5060;received=172.220.20.246;branch=z9hG4bK1339855036;rport=5060
+To: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzf-8p7eUKwZ-t6IaLO3OJoSI5Y*3-1-18708*fdei.3
+Content-Length:    0
+
+----- #55 t=+159.949s 172.220.0.52:5080 -> 172.220.0.178:5080 len=463
+SIP/2.0 200 OK
+From: "34020100002000000178"<sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfwjg7cQadyV*3-1-18708*chfg.3;utype=20
+Call-ID: WrDFBqM_hcPD3VJYYBtfmpVigCvQDEeeC8m--4dhpP4DI3Vhb6e-2J1igda@ssg
+CSeq: 102 NOTIFY
+To: <sip:34020100002000000052@172.220.0.52:5080>;tag=ssgwzfnxj_DnZs_3w3p6zd*3-1-18708*echg.3
+User-Agent: V7.19.90.B03
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-3-21-599*7SwLc7e12y1iabb.3
+Content-Length:    0
+
+----- #56 t=+163.052s 172.220.0.97:55018 -> 172.220.0.178:5080 len=16
+....�19601780042
+
+----- #57 t=+163.054s 172.220.0.178:5080 -> 172.220.0.97:55018 len=16
+....�19601780042
+
+----- #58 t=+164.538s 172.220.0.85:8054 -> 172.220.0.178:5080 len=790
+INVITE sip:as@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.0.85:8054;rport;branch=z9hG4bK4139403916
+From: <sip:19601780002@172.220.0.178:5080>;tag=1218930549;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;utype=5
+Call-ID: 3185866613
+CSeq: 20 INVITE
+Contact: <sip:19601780002@172.220.0.85:8054>
+Content-Type: application/sdp
+Max-Forwards: 70
+User-Agent: MDSCLIENT;UDP
+Subject: This is a call for a conversation
+Supported: 100rel
+Ptx-Extension: ptxpullup
+Content-Length:   281
+
+v=0
+o=webdac 0 0 IN IP4 172.220.0.85
+s=PullUp
+c=IN IP4 172.220.0.85
+t=0 0
+m=video 20182 RTP/AVP/TCP 0 8 102
+a=ssrc:string;00001199
+a=Height:integer;720
+a=Width:integer;1280
+a=framerate:12
+a=recvonly
+m=audio 20180 RTP/AVP/TCP 0 8 101
+a=ssrc:string;00004440
+a=sendrecv
+
+----- #59 t=+164.543s 172.220.0.178:5080 -> 172.220.20.246:5060 len=810
+INVITE sip:32128401001311782461@172.220.20.246:5060 SIP/2.0
+Subject: 32128401001311782461:00,34020100002000000178:0
+User-Agent: V7.19.90.B03
+Content-Type: application/sdp
+Content-Length:  220
+Call-ID: eXkqbsD0WGLghhVOEm8LNWBXzxTPTQj1hgjh@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfn3lbjLMzn72sqNIFn*3-1-18708*fdej.3
+To: "ipc_178_246_gb"<sip:32128401001311782461@172.220.20.246:5060>;utype=5
+CSeq: 100 INVITE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-320-12-382*w-1jYnP41iabd.3;rport
+Contact: <sip:172.220.0.178:5080>
+
+v=0
+o=32128401001311782461 0 0 IN IP4 172.220.0.184
+s=Play
+c=IN IP4 172.220.0.184
+t=0 0
+m=video 21006 TCP/RTP/AVP 96
+a=setup:passive
+a=connection:new
+a=recvonly
+a=rtpmap:96 PS/90000
+y=0000000062
+f=v/////a///
+
+----- #60 t=+164.545s 172.220.20.246:5060 -> 172.220.0.178:5080 len=408
+SIP/2.0 100 Trying
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-320-12-382*w-1jYnP41iabd.3;rport=5080
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfn3lbjLMzn72sqNIFn*3-1-18708*fdej.3
+To: "ipc_178_246_gb" <sip:32128401001311782461@172.220.20.246:5060>;utype=5
+Call-ID: eXkqbsD0WGLghhVOEm8LNWBXzxTPTQj1hgjh@ssg
+CSeq: 100 INVITE
+User-Agent: IP Camera
+Content-Length: 0
+
+----- #61 t=+164.556s 172.220.20.246:5060 -> 172.220.0.178:5080 len=720
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-320-12-382*w-1jYnP41iabd.3;rport=5080
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfn3lbjLMzn72sqNIFn*3-1-18708*fdej.3
+To: "ipc_178_246_gb" <sip:32128401001311782461@172.220.20.246:5060>;utype=5;tag=1025245232
+Call-ID: eXkqbsD0WGLghhVOEm8LNWBXzxTPTQj1hgjh@ssg
+CSeq: 100 INVITE
+Contact: <sip:32128401001311782461@172.220.20.246:5060>
+Content-Type: application/sdp
+User-Agent: IP Camera
+Content-Length:   209
+
+v=0
+o=32128401001311782461 2055 2055 IN IP4 172.220.20.246
+s=Play
+c=IN IP4 172.220.20.246
+t=0 0
+m=video 15060 TCP/RTP/AVP 96
+a=setup:active
+a=sendonly
+a=rtpmap:96 PS/90000
+a=filesize:0
+y=0000000062
+
+----- #62 t=+164.561s 172.220.0.178:5080 -> 172.220.20.246:5060 len=476
+ACK sip:32128401001311782461@172.220.20.246:5060 SIP/2.0
+Call-ID: eXkqbsD0WGLghhVOEm8LNWBXzxTPTQj1hgjh@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfn3lbjLMzn72sqNIFn*3-1-18708*fdej.3
+To: "ipc_178_246_gb"<sip:32128401001311782461@172.220.20.246:5060>;tag=1025245232;utype=5
+CSeq: 100 ACK
+User-Agent: V7.19.90.B03
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-320-12-382*_E4q7EWg1iabe.3;rport
+Content-Length:    0
+
+----- #63 t=+164.561s 172.220.0.178:5080 -> 172.220.0.85:8054 len=35
+�. ...�.....32128401001311782461...
+
+----- #64 t=+164.562s 172.220.0.85:8054 -> 172.220.0.178:5080 len=7
+�.....�
+
+----- #65 t=+164.563s 172.220.0.178:5080 -> 172.220.0.85:8054 len=783
+SIP/2.0 200 OK
+From: <sip:19601780002@172.220.0.178:5080>;tag=1218930549;utype=4
+Call-ID: 3185866613
+CSeq: 20 INVITE
+User-Agent: V7.19.90.B03
+Content-Type: application/sdp
+Content-Length:  269
+Ptx-Extension: ptxpullup;onlinecallid=35487681-1e8e-4a20-830e-9134beb32810
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf92_Zl5U8*3-1-18708*fdfa.3;utype=5
+Via: SIP/2.0/UDP 172.220.0.85:8054;received=172.220.0.85;branch=z9hG4bK4139403916;rport=8054
+Contact: <sip:19601780002@172.220.0.178:5080>
+
+v=0
+o=webdac 0 0 IN IP4 172.220.0.184
+s=PullUp
+c=IN IP4 172.220.0.184
+t=0 0
+m=video 21002 RTP/AVP/TCP 0 8 102
+a=sendonly
+a=ssrc:string;66
+a=Height:integer;720
+a=Width:integer;1280
+a=framerate:12.0
+m=audio 21004 RTP/AVP 0 8 101
+a=sendrecv
+a=ssrc:string;67
+
+----- #66 t=+164.564s 172.220.0.85:8054 -> 172.220.0.178:5080 len=424
+ACK sip:19601780002@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.0.85:8054;rport;branch=z9hG4bK2526017892
+From: <sip:19601780002@172.220.0.178:5080>;tag=1218930549;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf92_Zl5U8*3-1-18708*fdfa.3;utype=5
+Call-ID: 3185866613
+CSeq: 20 ACK
+Contact: <sip:19601780002@172.220.0.85:8054>
+Max-Forwards: 70
+User-Agent: MDSCLIENT;UDP
+Content-Length: 0
+
+----- #67 t=+164.894s 172.220.20.246:5060 -> 172.220.0.178:5080 len=570
+MESSAGE sip:34020100002000000178@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.20.246:5060;rport;branch=z9hG4bK996096617
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1685413670
+To: <sip:34020100002000000178@172.220.0.178:5080>
+Call-ID: 83846653
+CSeq: 20 MESSAGE
+Content-Type: Application/MANSCDP+xml
+Max-Forwards: 70
+User-Agent: IP Camera
+Content-Length:   180
+
+<?xml version="1.0" encoding="GB2312"?>
+<Notify>
+<CmdType>Keepalive</CmdType>
+<SN>68981</SN>
+<DeviceID>32128401001311782461</DeviceID>
+<Status>OK</Status>
+<Info>
+</Info>
+</Notify>
+
+----- #68 t=+164.896s 172.220.0.178:5080 -> 172.220.20.246:5060 len=371
+SIP/2.0 200 OK
+From: <sip:32128401001311782461@172.220.0.178:5080>;tag=1685413670
+Call-ID: 83846653
+CSeq: 20 MESSAGE
+User-Agent: V7.19.90.B03
+Via: SIP/2.0/UDP 172.220.20.246:5060;received=172.220.20.246;branch=z9hG4bK996096617;rport=5060
+To: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzf4fqzSCgkOcgVeccgFwB677KM*3-1-18708*fdfb.3
+Content-Length:    0
+
+----- #69 t=+169.909s 172.220.20.246:5060 -> 172.220.0.178:5080 len=4
+
+
+----- #70 t=+172.608s 172.220.0.85:8054 -> 172.220.0.178:5080 len=378
+BYE sip:19601780002@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.0.85:8054;rport;branch=z9hG4bK2220717727
+From: <sip:19601780002@172.220.0.178:5080>;tag=1218930549;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf92_Zl5U8*3-1-18708*fdfa.3;utype=5
+Call-ID: 3185866613
+CSeq: 21 BYE
+Max-Forwards: 70
+User-Agent: MDSCLIENT;UDP
+Content-Length: 0
+
+----- #71 t=+172.608s 172.220.0.178:5080 -> 172.220.0.85:8054 len=331
+SIP/2.0 200 OK
+From: <sip:19601780002@172.220.0.178:5080>;tag=1218930549;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf92_Zl5U8*3-1-18708*fdfa.3;utype=5
+Call-ID: 3185866613
+CSeq: 21 BYE
+Via: SIP/2.0/UDP 172.220.0.85:8054;received=172.220.0.85;branch=z9hG4bK2220717727;rport=8054
+Content-Length:    0
+
+----- #72 t=+172.615s 172.220.0.178:5080 -> 172.220.0.85:8054 len=35
+�. ...�.....32128401001311782461...
+
+----- #73 t=+172.615s 172.220.0.178:5080 -> 172.220.20.246:5060 len=485
+BYE sip:32128401001311782461@172.220.20.246:5060 SIP/2.0
+Call-ID: eXkqbsD0WGLghhVOEm8LNWBXzxTPTQj1hgjh@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfn3lbjLMzn72sqNIFn*3-1-18708*fdej.3
+To: "ipc_178_246_gb"<sip:32128401001311782461@172.220.20.246:5060>;tag=1025245232;utype=5
+CSeq: 101 BYE
+User-Agent: V7.19.90.B03
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-320-12-382*sT_eq-Gh8cOr_HesZ1iabf.3;rport
+Content-Length:    0
+
+----- #74 t=+172.615s 172.220.0.85:8054 -> 172.220.0.178:5080 len=7
+�.....�
+
+----- #75 t=+172.617s 172.220.20.246:5060 -> 172.220.0.178:5080 len=425
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-320-12-382*sT_eq-Gh8cOr_HesZ1iabf.3;rport=5080
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfn3lbjLMzn72sqNIFn*3-1-18708*fdej.3
+To: "ipc_178_246_gb" <sip:32128401001311782461@172.220.20.246:5060>;tag=1025245232;utype=5
+Call-ID: eXkqbsD0WGLghhVOEm8LNWBXzxTPTQj1hgjh@ssg
+CSeq: 101 BYE
+User-Agent: IP Camera
+Content-Length: 0
+
+===== summary: 75 SIP messages =====
+RTP 127.0.0.1:60623 -> 127.0.0.1:59622  pkts=87 bytes=22272 window=0.243s~172.243s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:35579 -> 127.0.0.1:10005  pkts=1 bytes=172 window=0.307s~0.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:59496 -> 127.0.0.1:8889  pkts=174 bytes=6264 window=0.340s~173.354s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:37174 -> 127.0.0.1:44472  pkts=87 bytes=22272 window=0.458s~172.458s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:49151 -> 127.0.0.1:52189  pkts=87 bytes=22272 window=0.463s~172.463s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:49745 -> 127.0.0.1:56282  pkts=87 bytes=22272 window=0.480s~172.481s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:42456 -> 127.0.0.1:34218  pkts=87 bytes=22272 window=0.494s~172.494s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:38634 -> 127.0.0.1:36520  pkts=87 bytes=22272 window=0.497s~172.497s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:55508 -> 127.0.0.1:40555  pkts=87 bytes=22272 window=0.514s~172.514s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:42763 -> 127.0.0.1:56181  pkts=87 bytes=22272 window=0.519s~172.519s ssrc=None (pt,marker)=[]
+RTP 172.220.0.85:31236 -> 172.220.0.178:13001  pkts=98 bytes=1928 window=0.669s~172.713s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.0.85:31236  pkts=88 bytes=1470 window=0.669s~172.712s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:8004 -> 172.220.0.89:8004  pkts=35 bytes=455 window=0.897s~170.897s ssrc=None (pt,marker)=[]
+RTP 172.220.0.70:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=1.128s~122.078s ssrc=None (pt,marker)=[]
+RTP 172.220.0.97:2190 -> 255.255.255.255:2190  pkts=3 bytes=498 window=1.219s~121.321s ssrc=None (pt,marker)=[]
+RTP 172.220.0.97:13001 -> 172.220.0.178:13001  pkts=4 bytes=68 window=1.453s~136.510s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.0.97:13001  pkts=4 bytes=48 window=1.453s~136.510s ssrc=None (pt,marker)=[]
+RTP 172.220.0.32:53809 -> 172.220.255.255:8082  pkts=1 bytes=69 window=1.913s~1.913s ssrc=41248 (pt,marker)=[(30, 1)]
+RTP 192.168.13.32:53810 -> 192.168.13.255:8082  pkts=1 bytes=69 window=1.914s~1.914s ssrc=41248 (pt,marker)=[(30, 1)]
+RTP 172.220.0.32:53816 -> 172.220.255.255:8083  pkts=1 bytes=21 window=1.922s~1.922s ssrc=None (pt,marker)=[]
+RTP 192.168.13.32:53817 -> 192.168.13.255:8083  pkts=1 bytes=21 window=1.923s~1.923s ssrc=None (pt,marker)=[]
+RTP 172.220.20.23:53067 -> 255.255.255.255:13000  pkts=34 bytes=510 window=4.009s~169.016s ssrc=None (pt,marker)=[]
+RTP 172.220.20.131:43097 -> 255.255.255.255:13000  pkts=34 bytes=510 window=4.443s~169.443s ssrc=None (pt,marker)=[]
+RTP 172.220.0.26:13001 -> 172.220.0.178:13001  pkts=17 bytes=7672 window=4.550s~137.390s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.0.26:13001  pkts=17 bytes=7451 window=4.552s~137.391s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13011 -> 172.220.0.178:12021  pkts=12 bytes=276 window=4.632s~169.632s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13121 -> 172.220.0.178:13800  pkts=34 bytes=374 window=4.632s~169.632s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13800 -> 172.220.0.178:13121  pkts=34 bytes=340 window=4.632s~169.632s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:12021 -> 172.220.0.178:13011  pkts=12 bytes=348 window=4.633s~169.634s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:37841 -> 127.0.0.1:10086  pkts=29 bytes=116 window=4.645s~172.867s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:60049 -> 127.0.0.1:10005  pkts=1 bytes=172 window=5.307s~5.307s ssrc=None (pt,marker)=[]
+RTP 172.220.0.14:8235 -> 172.220.255.255:8235  pkts=6 bytes=216 window=7.841s~128.925s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:54546 -> 127.0.0.1:10005  pkts=1 bytes=172 window=10.306s~10.306s ssrc=None (pt,marker)=[]
+RTP 172.220.0.14:62060 -> 255.255.255.255:1947  pkts=5 bytes=200 window=10.622s~171.114s ssrc=None (pt,marker)=[]
+RTP 172.220.0.77:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=13.737s~134.737s ssrc=None (pt,marker)=[]
+RTP 172.220.0.14:62060 -> 172.220.255.255:1947  pkts=4 bytes=160 window=14.670s~135.330s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:57754 -> 127.0.0.1:10005  pkts=1 bytes=172 window=15.307s~15.307s ssrc=None (pt,marker)=[]
+RTP 172.220.0.50:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=15.321s~135.357s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:54285 -> 127.0.0.1:10005  pkts=1 bytes=172 window=20.307s~20.307s ssrc=None (pt,marker)=[]
+RTP 192.168.60.96:8235 -> 192.168.60.255:8235  pkts=3 bytes=108 window=21.451s~142.574s ssrc=None (pt,marker)=[]
+RTP 172.220.0.96:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=21.452s~142.574s ssrc=None (pt,marker)=[]
+RTP 172.220.0.9:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=22.874s~143.824s ssrc=None (pt,marker)=[]
+RTP 172.220.20.188:13001 -> 172.220.0.178:13001  pkts=4 bytes=68 window=23.839s~159.928s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.20.188:13001  pkts=4 bytes=48 window=23.839s~159.929s ssrc=None (pt,marker)=[]
+RTP 192.168.1.17:8235 -> 192.168.1.255:8235  pkts=3 bytes=108 window=24.020s~145.013s ssrc=None (pt,marker)=[]
+RTP 172.220.0.17:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=24.020s~145.013s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:35151 -> 127.0.0.1:10005  pkts=1 bytes=172 window=25.306s~25.306s ssrc=None (pt,marker)=[]
+RTP 172.220.0.97:55167 -> 172.220.0.178:13001  pkts=4 bytes=68 window=27.412s~163.007s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.0.97:55167  pkts=4 bytes=48 window=27.413s~163.008s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:51337 -> 127.0.0.1:10005  pkts=1 bytes=172 window=30.307s~30.307s ssrc=None (pt,marker)=[]
+RTP 172.220.0.2:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=31.820s~153.124s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:41803 -> 127.0.0.1:10005  pkts=1 bytes=172 window=35.307s~35.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:44214 -> 127.0.0.1:10005  pkts=1 bytes=172 window=40.306s~40.306s ssrc=None (pt,marker)=[]
+RTP 172.220.0.66:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=42.261s~163.677s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:56408 -> 127.0.0.1:10005  pkts=1 bytes=172 window=45.307s~45.307s ssrc=None (pt,marker)=[]
+RTP 172.220.0.4:8235 -> 172.220.255.255:8235  pkts=3 bytes=108 window=47.004s~167.751s ssrc=None (pt,marker)=[]
+RTP 172.220.0.32:65425 -> 172.220.255.255:8082  pkts=1 bytes=69 window=47.101s~47.101s ssrc=41248 (pt,marker)=[(30, 1)]
+RTP 192.168.13.32:65426 -> 192.168.13.255:8082  pkts=1 bytes=69 window=47.101s~47.101s ssrc=41248 (pt,marker)=[(30, 1)]
+RTP 172.220.0.32:65432 -> 172.220.255.255:8083  pkts=1 bytes=21 window=47.110s~47.110s ssrc=None (pt,marker)=[]
+RTP 192.168.13.32:65433 -> 192.168.13.255:8083  pkts=1 bytes=21 window=47.110s~47.110s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:41690 -> 127.0.0.1:10005  pkts=1 bytes=172 window=50.307s~50.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:44961 -> 127.0.0.1:10005  pkts=1 bytes=172 window=55.306s~55.306s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:45844 -> 127.0.0.1:10005  pkts=1 bytes=172 window=60.307s~60.307s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:37723 -> 172.220.0.83:123  pkts=1 bytes=16 window=63.289s~63.289s ssrc=2621285434 (pt,marker)=[(0, 0)]
+RTP 172.220.0.83:123 -> 172.220.0.178:37723  pkts=1 bytes=16 window=63.290s~63.290s ssrc=2986889730 (pt,marker)=[(0, 0)]
+RTP 127.0.0.1:58408 -> 127.0.0.1:10005  pkts=1 bytes=172 window=65.307s~65.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:56891 -> 127.0.0.1:10005  pkts=1 bytes=172 window=70.306s~70.306s ssrc=None (pt,marker)=[]
+RTP 172.220.0.97:38318 -> 172.220.0.178:8554  pkts=1 bytes=24 window=72.097s~72.097s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:37611 -> 127.0.0.1:10005  pkts=1 bytes=172 window=75.307s~75.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:43128 -> 127.0.0.1:10005  pkts=1 bytes=172 window=80.307s~80.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:60992 -> 127.0.0.1:10005  pkts=1 bytes=172 window=85.306s~85.306s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:43197 -> 127.0.0.1:10005  pkts=1 bytes=172 window=90.307s~90.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:43946 -> 127.0.0.1:10005  pkts=1 bytes=172 window=95.307s~95.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:56783 -> 127.0.0.1:10005  pkts=1 bytes=172 window=100.306s~100.306s ssrc=None (pt,marker)=[]
+RTP 172.220.0.32:54221 -> 172.220.255.255:8082  pkts=1 bytes=69 window=102.089s~102.089s ssrc=41248 (pt,marker)=[(30, 1)]
+RTP 192.168.13.32:54222 -> 192.168.13.255:8082  pkts=1 bytes=69 window=102.089s~102.089s ssrc=41248 (pt,marker)=[(30, 1)]
+RTP 172.220.0.32:54228 -> 172.220.255.255:8083  pkts=1 bytes=21 window=102.098s~102.098s ssrc=None (pt,marker)=[]
+RTP 192.168.13.32:54229 -> 192.168.13.255:8083  pkts=1 bytes=21 window=102.098s~102.098s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:47866 -> 127.0.0.1:10005  pkts=1 bytes=172 window=105.307s~105.307s ssrc=None (pt,marker)=[]
+RTP 172.220.0.97:48339 -> 172.220.0.178:8554  pkts=1 bytes=24 window=106.351s~106.351s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:38244 -> 127.0.0.1:10005  pkts=1 bytes=172 window=110.307s~110.307s ssrc=None (pt,marker)=[]
+RTP 172.220.20.188:51038 -> 172.220.0.178:8554  pkts=1 bytes=24 window=114.584s~114.584s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:35857 -> 127.0.0.1:10005  pkts=1 bytes=172 window=115.306s~115.306s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13011 -> 172.220.0.178:12001  pkts=1 bytes=36 window=115.695s~115.695s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:12001 -> 172.220.0.178:13011  pkts=1 bytes=68 window=115.696s~115.696s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13011 -> 172.220.0.178:12011  pkts=3 bytes=434 window=115.700s~156.699s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:12011 -> 172.220.0.178:13011  pkts=3 bytes=287 window=115.705s~156.704s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:58309 -> 127.0.0.1:10005  pkts=1 bytes=172 window=120.307s~120.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:36737 -> 127.0.0.1:10005  pkts=1 bytes=172 window=125.307s~125.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:41516 -> 127.0.0.1:10005  pkts=1 bytes=172 window=130.306s~130.306s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:52660 -> 127.0.0.1:10005  pkts=1 bytes=172 window=135.307s~135.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:51401 -> 127.0.0.1:10005  pkts=1 bytes=172 window=140.307s~140.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:58267 -> 127.0.0.1:10005  pkts=1 bytes=172 window=145.306s~145.306s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:46071 -> 127.0.0.1:10005  pkts=1 bytes=172 window=150.307s~150.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:48662 -> 127.0.0.1:10005  pkts=1 bytes=172 window=155.307s~155.307s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:41618 -> 127.0.0.1:10005  pkts=1 bytes=172 window=160.306s~160.306s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:56631 -> 127.0.0.1:10005  pkts=1 bytes=172 window=165.307s~165.307s ssrc=None (pt,marker)=[]
+RTP 172.220.0.184:21002 -> 172.220.0.178:40009  pkts=3632 bytes=3604632 window=165.601s~172.589s ssrc=72 (pt,marker)=[(115, 0), (115, 1)]
+RTP 127.0.0.1:51261 -> 127.0.0.1:10005  pkts=1 bytes=172 window=170.306s~170.306s ssrc=None (pt,marker)=[]
+
+########## resource/pcap/IPC呼叫.pcap ##########
+total packets: 5528
+
+----- #1 t=+1.400s 172.220.0.85:8054 -> 172.220.0.178:5080 len=787
+INVITE sip:as@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.0.85:8054;rport;branch=z9hG4bK96695201
+From: <sip:19601780002@172.220.0.178:5080>;tag=346567087;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;utype=5
+Call-ID: 3908809043
+CSeq: 20 INVITE
+Contact: <sip:19601780002@172.220.0.85:8054>
+Content-Type: application/sdp
+Max-Forwards: 70
+User-Agent: MDSCLIENT;UDP
+Subject: This is a call for a conversation
+Supported: 100rel
+Ptx-Extension: ptxpullup
+Content-Length:   281
+
+v=0
+o=webdac 0 0 IN IP4 172.220.0.85
+s=PullUp
+c=IN IP4 172.220.0.85
+t=0 0
+m=video 20182 RTP/AVP/TCP 0 8 102
+a=ssrc:string;00004083
+a=Height:integer;720
+a=Width:integer;1280
+a=framerate:12
+a=recvonly
+m=audio 20180 RTP/AVP/TCP 0 8 101
+a=ssrc:string;00014203
+a=sendrecv
+
+----- #2 t=+1.416s 172.220.0.178:5080 -> 172.220.20.246:5060 len=834
+INVITE sip:32128401001311782461@172.220.0.178:5080 SIP/2.0
+Subject: 32128401001311782461:00,34020100002000000178:0
+User-Agent: V7.19.90.B03
+Content-Type: application/sdp
+Content-Length:  220
+Call-ID: oT73TidDGzxrZji-H2kbiFbwB-C3xoKC2kvGSTSzilbr4Nxp8BYzv1hhae@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfO1-_5435M7IL0RbqBbRm9*3-1-18708*fdjf.3
+To: "ipc_178_246_gb"<sip:32128401001311782461@172.220.0.178:5080>;utype=5
+CSeq: 100 INVITE
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-322-12-604*X_wyrF1y1iacc.3;rport
+Contact: <sip:172.220.0.178:5080>
+
+v=0
+o=32128401001311782461 0 0 IN IP4 172.220.0.178
+s=Play
+c=IN IP4 172.220.0.178
+t=0 0
+m=video 21344 TCP/RTP/AVP 96
+a=setup:passive
+a=connection:new
+a=recvonly
+a=rtpmap:96 PS/90000
+y=0000000001
+f=v/////a///
+
+----- #3 t=+1.418s 172.220.20.246:5060 -> 172.220.0.178:5080 len=433
+SIP/2.0 100 Trying
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-322-12-604*X_wyrF1y1iacc.3;rport=5080
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfO1-_5435M7IL0RbqBbRm9*3-1-18708*fdjf.3
+To: "ipc_178_246_gb" <sip:32128401001311782461@172.220.0.178:5080>;utype=5
+Call-ID: oT73TidDGzxrZji-H2kbiFbwB-C3xoKC2kvGSTSzilbr4Nxp8BYzv1hhae@ssg
+CSeq: 100 INVITE
+User-Agent: IP Camera
+Content-Length: 0
+
+----- #4 t=+1.430s 172.220.20.246:5060 -> 172.220.0.178:5080 len=743
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-322-12-604*X_wyrF1y1iacc.3;rport=5080
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfO1-_5435M7IL0RbqBbRm9*3-1-18708*fdjf.3
+To: "ipc_178_246_gb" <sip:32128401001311782461@172.220.0.178:5080>;utype=5;tag=1350759547
+Call-ID: oT73TidDGzxrZji-H2kbiFbwB-C3xoKC2kvGSTSzilbr4Nxp8BYzv1hhae@ssg
+CSeq: 100 INVITE
+Contact: <sip:32128401001311782461@172.220.20.246:5060>
+Content-Type: application/sdp
+User-Agent: IP Camera
+Content-Length:   207
+
+v=0
+o=32128401001311782461 772 772 IN IP4 172.220.20.246
+s=Play
+c=IN IP4 172.220.20.246
+t=0 0
+m=video 15060 TCP/RTP/AVP 96
+a=setup:active
+a=sendonly
+a=rtpmap:96 PS/90000
+a=filesize:0
+y=0000000001
+
+----- #5 t=+1.439s 172.220.0.178:5080 -> 172.220.0.85:8054 len=35
+�. ...�.....32128401001311782461...
+
+----- #6 t=+1.439s 172.220.0.178:5080 -> 172.220.20.246:5060 len=509
+ACK sip:32128401001311782461@172.220.20.246:5060 SIP/2.0
+Call-ID: oT73TidDGzxrZji-H2kbiFbwB-C3xoKC2kvGSTSzilbr4Nxp8BYzv1hhae@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfO1-_5435M7IL0RbqBbRm9*3-1-18708*fdjf.3
+To: "ipc_178_246_gb"<sip:32128401001311782461@172.220.0.178:5080>;tag=1350759547;utype=5
+CSeq: 100 ACK
+User-Agent: V7.19.90.B03
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-322-12-604*4Tl8Rfhc9Wt3hmJx1iacd.3;rport
+Content-Length:    0
+
+----- #7 t=+1.440s 172.220.0.85:8054 -> 172.220.0.178:5080 len=7
+�.....�
+
+----- #8 t=+1.457s 172.220.0.178:5080 -> 172.220.0.85:8054 len=780
+SIP/2.0 200 OK
+From: <sip:19601780002@172.220.0.178:5080>;tag=346567087;utype=4
+Call-ID: 3908809043
+CSeq: 20 INVITE
+User-Agent: V7.19.90.B03
+Content-Type: application/sdp
+Content-Length:  267
+Ptx-Extension: ptxpullup;onlinecallid=1e2e469d-b050-4bcb-a233-b84419978cb5
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf7I_N7Re8YB*3-1-18708*fdjg.3;utype=5
+Via: SIP/2.0/UDP 172.220.0.85:8054;received=172.220.0.85;branch=z9hG4bK96695201;rport=8054
+Contact: <sip:19601780002@172.220.0.178:5080>
+
+v=0
+o=webdac 0 0 IN IP4 172.220.0.178
+s=PullUp
+c=IN IP4 172.220.0.178
+t=0 0
+m=video 21002 RTP/AVP/TCP 0 8 102
+a=sendonly
+a=ssrc:string;4
+a=Height:integer;720
+a=Width:integer;1280
+a=framerate:12.0
+m=audio 21004 RTP/AVP 0 8 101
+a=sendrecv
+a=ssrc:string;3
+
+----- #9 t=+1.458s 172.220.0.85:8054 -> 172.220.0.178:5080 len=425
+ACK sip:19601780002@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.0.85:8054;rport;branch=z9hG4bK1666431466
+From: <sip:19601780002@172.220.0.178:5080>;tag=346567087;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf7I_N7Re8YB*3-1-18708*fdjg.3;utype=5
+Call-ID: 3908809043
+CSeq: 20 ACK
+Contact: <sip:19601780002@172.220.0.85:8054>
+Max-Forwards: 70
+User-Agent: MDSCLIENT;UDP
+Content-Length: 0
+
+----- #10 t=+4.443s 172.220.0.97:55018 -> 172.220.0.178:5080 len=16
+....�19601780042
+
+----- #11 t=+4.445s 172.220.0.178:5080 -> 172.220.0.97:55018 len=16
+....�19601780042
+
+----- #12 t=+6.101s 172.220.0.85:8054 -> 172.220.0.178:5080 len=379
+BYE sip:19601780002@172.220.0.178:5080 SIP/2.0
+Via: SIP/2.0/UDP 172.220.0.85:8054;rport;branch=z9hG4bK1391375100
+From: <sip:19601780002@172.220.0.178:5080>;tag=346567087;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf7I_N7Re8YB*3-1-18708*fdjg.3;utype=5
+Call-ID: 3908809043
+CSeq: 21 BYE
+Max-Forwards: 70
+User-Agent: MDSCLIENT;UDP
+Content-Length: 0
+
+----- #13 t=+6.101s 172.220.0.178:5080 -> 172.220.0.85:8054 len=332
+SIP/2.0 200 OK
+From: <sip:19601780002@172.220.0.178:5080>;tag=346567087;utype=4
+To: <sip:32128401001311782461@172.220.0.178:5080>;tag=ssgwzf7I_N7Re8YB*3-1-18708*fdjg.3;utype=5
+Call-ID: 3908809043
+CSeq: 21 BYE
+Via: SIP/2.0/UDP 172.220.0.85:8054;received=172.220.0.85;branch=z9hG4bK1391375100;rport=8054
+Content-Length:    0
+
+----- #14 t=+6.108s 172.220.0.178:5080 -> 172.220.0.85:8054 len=35
+�. ...�.....32128401001311782461...
+
+----- #15 t=+6.109s 172.220.0.178:5080 -> 172.220.20.246:5060 len=505
+BYE sip:32128401001311782461@172.220.20.246:5060 SIP/2.0
+Call-ID: oT73TidDGzxrZji-H2kbiFbwB-C3xoKC2kvGSTSzilbr4Nxp8BYzv1hhae@ssg
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfO1-_5435M7IL0RbqBbRm9*3-1-18708*fdjf.3
+To: "ipc_178_246_gb"<sip:32128401001311782461@172.220.0.178:5080>;tag=1350759547;utype=5
+CSeq: 101 BYE
+User-Agent: V7.19.90.B03
+Max-Forwards: 70
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-322-12-604*IxCm-eOWSU_N1iace.3;rport
+Content-Length:    0
+
+----- #16 t=+6.109s 172.220.0.85:8054 -> 172.220.0.178:5080 len=7
+�.....�
+
+----- #17 t=+6.111s 172.220.20.246:5060 -> 172.220.0.178:5080 len=445
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.220.0.178:5080;branch=z9hG4bK*3-1-18708-322-12-604*IxCm-eOWSU_N1iace.3;rport=5080
+From: <sip:34020100002000000178@172.220.0.178:5080>;tag=ssgwzfO1-_5435M7IL0RbqBbRm9*3-1-18708*fdjf.3
+To: "ipc_178_246_gb" <sip:32128401001311782461@172.220.0.178:5080>;tag=1350759547;utype=5
+Call-ID: oT73TidDGzxrZji-H2kbiFbwB-C3xoKC2kvGSTSzilbr4Nxp8BYzv1hhae@ssg
+CSeq: 101 BYE
+User-Agent: IP Camera
+Content-Length: 0
+
+===== summary: 17 SIP messages =====
+RTP 127.0.0.1:60623 -> 127.0.0.1:59622  pkts=5 bytes=1280 window=0.000s~8.000s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:59496 -> 127.0.0.1:8889  pkts=8 bytes=288 window=0.129s~7.129s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:37174 -> 127.0.0.1:44472  pkts=4 bytes=1024 window=0.215s~6.215s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:49151 -> 127.0.0.1:52189  pkts=4 bytes=1024 window=0.220s~6.220s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:49745 -> 127.0.0.1:56282  pkts=4 bytes=1024 window=0.238s~6.238s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:42456 -> 127.0.0.1:34218  pkts=4 bytes=1024 window=0.252s~6.252s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:38634 -> 127.0.0.1:36520  pkts=4 bytes=1024 window=0.254s~6.254s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:55508 -> 127.0.0.1:40555  pkts=4 bytes=1024 window=0.271s~6.271s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:42763 -> 127.0.0.1:56181  pkts=4 bytes=1024 window=0.276s~6.276s ssrc=None (pt,marker)=[]
+RTP 172.220.0.85:31236 -> 172.220.0.178:13001  pkts=4 bytes=46 window=0.462s~4.454s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.0.85:31236  pkts=3 bytes=36 window=0.463s~4.454s ssrc=None (pt,marker)=[]
+RTP 172.220.20.188:13001 -> 172.220.0.178:13001  pkts=1 bytes=17 window=0.574s~0.574s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.20.188:13001  pkts=1 bytes=12 window=0.574s~0.574s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:37841 -> 127.0.0.1:10086  pkts=2 bytes=8 window=0.914s~6.922s ssrc=None (pt,marker)=[]
+RTP 172.220.20.23:53067 -> 255.255.255.255:13000  pkts=2 bytes=30 window=1.142s~6.143s ssrc=None (pt,marker)=[]
+RTP 172.220.20.131:43097 -> 255.255.255.255:13000  pkts=2 bytes=30 window=1.201s~6.201s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13121 -> 172.220.0.178:13800  pkts=2 bytes=22 window=1.389s~6.389s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13800 -> 172.220.0.178:13121  pkts=2 bytes=20 window=1.389s~6.389s ssrc=None (pt,marker)=[]
+RTP 172.220.0.85:20180 -> 172.220.0.178:21004  pkts=2 bytes=24 window=1.460s~2.460s ssrc=3 (pt,marker)=[(101, 0)]
+RTP 127.0.0.1:42038 -> 127.0.0.1:10005  pkts=1 bytes=172 window=2.064s~2.064s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:21002 -> 172.220.0.178:40010  pkts=1849 bytes=1835561 window=2.590s~6.145s ssrc=26298 (pt,marker)=[(115, 0), (115, 1)]
+RTP 172.220.0.178:8004 -> 172.220.0.89:8004  pkts=2 bytes=26 window=2.654s~7.655s ssrc=None (pt,marker)=[]
+RTP 172.220.0.97:55167 -> 172.220.0.178:13001  pkts=1 bytes=17 window=4.371s~4.371s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13001 -> 172.220.0.97:55167  pkts=1 bytes=12 window=4.372s~4.372s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:13011 -> 172.220.0.178:12021  pkts=1 bytes=23 window=6.389s~6.389s ssrc=None (pt,marker)=[]
+RTP 172.220.0.178:12021 -> 172.220.0.178:13011  pkts=1 bytes=29 window=6.391s~6.391s ssrc=None (pt,marker)=[]
+RTP 127.0.0.1:46548 -> 127.0.0.1:10005  pkts=1 bytes=172 window=7.064s~7.064s ssrc=None (pt,marker)=[]
+RTP 172.220.0.2:8235 -> 172.220.255.255:8235  pkts=1 bytes=36 window=7.220s~7.220s ssrc=None (pt,marker)=[]
