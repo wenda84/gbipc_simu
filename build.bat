@@ -202,7 +202,21 @@ if "%PS_N%"=="0" (
   echo [4/4] ps samples : %PS_N% file^(s^) -^> resource\ps_samples\
 )
 
-REM (2) 用户手册 -> exe 同级 Readme.md（根目录，打包目录不再含 docs\）
+REM (2) README 配图 -> exe 同级 resource\snapshot\
+REM 原因：Readme.md 用相对路径 ./resource/snapshot/*.png 引用界面截图，
+REM PyInstaller 不会收集文档用图，故在此统一拷贝，保证整文件夹拷贝后图片可见。
+set "SNP_DST=%OUTDIR%\resource\snapshot"
+if not exist "%SNP_DST%" mkdir "%SNP_DST%" 2>nul
+xcopy /Y /Q "%PROJ%\resource\snapshot\*" "%SNP_DST%\" >nul 2>&1
+set "SNP_N=0"
+for /f "delims=" %%F in ('dir /b "%SNP_DST%\*" 2^>nul') do set /a "SNP_N+=1"
+if "%SNP_N%"=="0" (
+  echo [WARN] snapshot images not copied; check %PROJ%\resource\snapshot
+) else (
+  echo [4/4] snapshot  : %SNP_N% item^(s^) -^> resource\snapshot\
+)
+
+REM (3) 用户手册 -> exe 同级 Readme.md（根目录，打包目录不再含 docs\）
 copy /Y "%PROJ%\Readme.md" "%OUTDIR%\Readme.md" >nul 2>&1
 if exist "%OUTDIR%\Readme.md" (
   echo [4/4] user manual: -^> Readme.md
@@ -210,7 +224,7 @@ if exist "%OUTDIR%\Readme.md" (
   echo [WARN] user manual not copied; check %PROJ%\Readme.md
 )
 
-REM (3) 默认配置 -> exe 同级 config\（优先拷贝项目根已调好的 config；
+REM (4) 默认配置 -> exe 同级 config\（优先拷贝项目根已调好的 config；
 REM     若项目根无 config 则退回物化一份默认值；首次运行 load_config 仍会兜底）
 REM     用 Python 脚本拷贝/生成：避免 xcopy 在中文目标路径下静默失败。
 "%VENV_PY%" "%PROJ%\tools\build_param\copy_config.py" "%PROJ%" "%OUTDIR%"
@@ -229,6 +243,7 @@ echo    dir  : %OUTDIR%
 echo          (copy the whole dir to deploy on another Windows PC)
 echo    conf : %OUTDIR%\config\app_config.toml
 echo    ps   : %OUTDIR%\resource\ps_samples\  (replace samples here)
+echo    snap : %OUTDIR%\resource\snapshot\     (README illustrations)
 echo    doc  : %OUTDIR%\Readme.md
 echo ============================================================
 
