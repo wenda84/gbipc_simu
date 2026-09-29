@@ -1,0 +1,71 @@
+# GB28181 IPC 模拟工具 — 配置文件 (TOML)
+
+[local]
+# 本机 IP；空字符串 = 启动时按到平台的路由自动探测
+local_ip = ""
+# 本地 SIP 端口（UDP）
+local_sip_port = 5088
+
+[server]
+# SIP 服务器 ID（20 位）
+server_id = "34020100002000000178"
+# SIP 服务器域（host:port）
+server_domain = "172.220.0.178:5080"
+# SIP 服务器地址（IP）
+server_ip = "172.220.0.178"
+# SIP 服务器端口
+server_port = 5080
+
+[device]
+# 设备 ID（20 位，第 11~13 位 132=IPC）
+device_id = "32128401001311782463"
+# SIP 用户认证 ID（通常与 device_id 相同）
+auth_username = "32128401001311782463"
+# 注册密码
+password = "12345678"
+
+[register]
+# 注册有效期（秒，建议 >=3600）
+register_expires = 3600
+# 注册失败重试间隔（秒，>=60）
+register_retry_interval = 60
+# 心跳周期（秒）
+keepalive_interval = 60
+# 最大心跳超时次数
+keepalive_timeout_count = 3
+# 注销 REGISTER 发出后等待送达的时间（秒）
+unregister_grace = 2.0
+
+[media]
+# 本机媒体端口（UDP 源端口 / TCP 本地端口）
+local_media_port = 15088
+# 点播 PS 媒体流文件（相对工程根 / 安装根的路径）
+ps_file = "resource/ps_samples/HK264.ps"
+# 是否循环播放
+loop_play = true
+
+[broadcast]
+# 国标广播开关（勾选后，支持响应国标广播请求）
+broadcast_enabled = true
+# 本机音频收流端口（UDP 绑定 / TCP 监听）
+broadcast_media_port = 15062
+# 抖动缓冲目标深度（毫秒）
+broadcast_jitter_ms = 60
+# 播放增益（%，100 = 原样输出）
+broadcast_volume_percent = 100
+# 入流中断判定（秒），超时按附录 M 释放链路
+broadcast_rtp_timeout = 300.0
+
+[device_info]
+# 设备名称（Catalog 应答）
+device_name = "GBIPC-Simulator"
+# 厂商
+manufacturer = "Simulator"
+# 型号
+model = "GBIPC-SIM-1000"
+# 固件版本
+firmware = "V3.0.0"
+# 通道号
+channel = 1
+# 行政区划代码（6 位）
+civil_code = "320101"
