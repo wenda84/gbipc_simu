@@ -56,6 +56,27 @@ echo    Package : %MODE_TXT%
 echo    Console : %CONSOLE%
 echo ============================================================
 
+REM ---- base python (bundled, location-independent via %PROJ%) ----
+set "BASE_PY=%PROJ%\runtime\python\python.exe"
+
+REM =====================================================================
+REM Self-heal: the committed venv (runtime\venv312) bakes the base-python
+REM path from when it was first created. If the project was moved, the venv
+REM python refuses to start ("No Python at '...'") and every `python -m pip`
+REM call fails. Rewrite the stale absolute root in pyvenv.cfg / activate
+REM scripts using the current %PROJ%. Uses the bundled BASE_PY, which is
+REM independent of the (possibly broken) venv, so this stays portable.
+REM =====================================================================
+if exist "%PROJ%\runtime\venv312\pyvenv.cfg" (
+  if exist "%BASE_PY%" (
+    echo [fix] heal venv stale absolute paths, if any
+    "%BASE_PY%" "%PROJ%\tools\build_param\heal_venv.py"
+  ) else (
+    echo [WARN] base python missing: %BASE_PY%
+    echo         cannot auto-heal venv; ensure the bundled python is present.
+  )
+)
+
 REM ---- preconditions ----
 if not exist "%VENV_PY%" (
   echo [ERROR] venv interpreter not found: %VENV_PY%
