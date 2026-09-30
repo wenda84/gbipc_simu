@@ -135,7 +135,7 @@ def _resolve_path() -> str:
 def _stamp(msg: str) -> None:
     if _WRITER is None:
         return
-    ts = datetime.datetime.now().isoformat(timespec="seconds")
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         _WRITER.write(f"[{ts}] {msg}\n")
         _WRITER.flush()

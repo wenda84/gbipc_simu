@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 
+from ..core.applog import log_event
 from PySide6.QtGui import QColor, QTextCharFormat, QTextCursor
 from PySide6.QtWidgets import (
     QCheckBox, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit, QPushButton,
@@ -61,8 +62,15 @@ class LogPage(QWidget):
     # ---------------- 写入 ----------------
 
     def append(self, text: str) -> None:
-        """追加一行日志（带时间戳）。暂停时不显示，但内容仍保留在缓冲里。"""
-        line = f"{time.strftime('%H:%M:%S')}  {text.rstrip()}"
+        """追加一行日志（带时间戳）。暂停时不显示，但内容仍保留在缓冲里。
+
+        默认同时落盘到 app.log：传原文给 log_event，由 applog 统一加
+        ``[YYYY-MM-DD HH:MM:SS]`` 时间戳，避免与下方 UI 时间戳重复。
+        """
+        t = text.rstrip()
+        log_event(t)
+        ts = time.strftime('%Y-%m-%d %H:%M:%S')
+        line = f"{ts}  {t}"
         self._lines.append(line)
         if len(self._lines) > _MAX_BLOCKS:
             del self._lines[: len(self._lines) - _MAX_BLOCKS]
