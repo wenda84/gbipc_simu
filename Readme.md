@@ -1,6 +1,6 @@
 # GB28181 IPC 模拟工具
 
-一个**解压即用**的GB28181 IPC模拟程序。
+一个**解压即用**的GB28181 IPC模拟程序。[仓库地址]( https://github.com/wenda84/gbipc_simu)：https://github.com/wenda84/gbipc_simu
 
 用于在没有真实摄像机的情况下，模拟 GB28181 IPC 设备接入国标平台，支持：
 
