@@ -28,6 +28,7 @@ from ..sip.pjsip_stack import PjsipStack
 from ..media.ps_streamer import PsStreamer
 from ..media.broadcast_session import BroadcastSession
 from . import manscdp
+from .applog import log_event
 from .config import AppConfig, detect_local_ip
 from .gbsdp import parse_offer, build_answer, build_audio_offer, build_subject, SdpOffer
 
@@ -405,7 +406,8 @@ class GbDevice(SipEvents):
         self._sip.send_message(self.cfg.server_uri, manscdp.CONTENT_TYPE, body)
         self._ka_pending += 1
         self._last_ka_sent = time.monotonic()
-        self._log(f"心跳已发送 (SN={self._ka_sn}, 待回应 {self._ka_pending})")
+        # 心跳发送仅写入日志文件，不在 UI 实时日志显示（避免高频刷屏）
+        log_event(f"心跳已发送 (SN={self._ka_sn}, 待回应 {self._ka_pending})")
 
     # ---------------- MESSAGE（查询应答） ----------------
 
