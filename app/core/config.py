@@ -70,12 +70,25 @@ class AppConfig:
 
     # ---- 派生 URI ----
     @property
+    def server_hostport(self) -> str:
+        """信令目标 host:port（=「服务器地址」+「服务器端口」）。
+
+        REGISTER 的 Request-URI、心跳/应答 MESSAGE 及广播 INVITE 的目标
+        均由此派生，使「SIP 服务器端口」字段真正生效。服务器 IP 为空时
+        从「服务器域」（host:port 形式）回退取 host，兼容只填域的旧配置。
+        """
+        ip = self.server_ip.strip()
+        if not ip:
+            ip = self.server_domain.split(":")[0].strip()
+        return f"{ip}:{self.server_port}"
+
+    @property
     def device_uri(self) -> str:
         return f"sip:{self.device_id}@{self.server_domain}"
 
     @property
     def server_uri(self) -> str:
-        return f"sip:{self.server_id}@{self.server_domain}"
+        return f"sip:{self.server_id}@{self.server_hostport}"
 
     @property
     def broadcast_channel_id(self) -> str:

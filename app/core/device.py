@@ -95,6 +95,12 @@ class GbDevice(SipEvents):
         self._reg_pending_since = 0.0
 
         self.state = RegState.IDLE
+        # 「平台侧曾认定本设备在线」的历史标志。与 state 的区别：state 是
+        # 最后一次注册事件的快照，可能因心跳超时/刷新失败而回退到 RETRYING；
+        # 但平台侧的注册记录在 expires（默认 3600s）到期前**依然存在**。
+        # 停止时是否需要发注销 REGISTER，必须以此为准——否则会漏注销、
+        # 让平台在设备已退出后仍保留在线状态。
+        self._ever_registered = False
         self.local_ip = cfg.local_ip
         self._ka_sn = 0                    # Keepalive SN 递增
         self._ka_pending = 0               # 已发未回应的心跳数
@@ -148,8 +154,8 @@ class GbDevice(SipEvents):
         self._worker = threading.Thread(target=self._run, name="gb-device", daemon=True)
         self._worker.start()
 
-    def stop(self) -> None:
-        """停止设备并释放 pjsua 资源。
+    def stop(self) -> bool:
+        """停止设备并释放 pjsua 资源。返回协议栈是否已**彻底销毁**。
 
         本方法**不**直接调用任何 pjsua API。它只向 worker 线程投递停止事件并
         join 等待其结束；真正的 teardown（set_registration / libDestroy 等）
@@ -160,19 +166,29 @@ class GbDevice(SipEvents):
         调用方（MainWindow._on_stop）通常在一个独立的 ui-stop 线程里调用本
         方法；join 期间该线程被阻塞，但本身不调用任何 pjsua API，因此安全。
         UI 线程的 closeEvent 直接调用本方法同理（只投递 + join）。
+
+        返回值是 UI 侧的安全前提：pjsua2 的 Lib 是**进程级单实例**，旧协议栈
+        未销毁前新建会触发竞态崩溃。join 超时即代表 teardown 仍卡在 pjsua
+        内部（libDestroy 阻塞），此时 worker 仍在后台运行，调用方必须继续
+        保持「禁止启动」状态，不能把界面翻回可启动。
         """
         self._queue.put(("stop", None))
+        ok = True
         if self._worker is not None:
             # teardown 含挂断呼叫排空(3s)+沉降(0.5s)+注销(最长 unregister_grace)
             # +媒体流停止(3s)，给足超时避免 worker 被提前置空而仍在后台析构。
             self._worker.join(timeout=20)
             if self._worker.is_alive():
-                # join 超时说明 teardown 卡住（疑似 pjsua 内部阻塞），
-                # 留痕供排查；此后 worker 仍在后台运行，进程退出时随
-                # daemon 线程一并终止。
+                # join 超时说明 teardown 卡住（疑似 pjsua 内部阻塞）。注意：
+                # 此时**不能**把 worker 置 None 后当作已停止——旧协议栈仍在
+                # 后台销毁，允许重新启动会撞进程级单实例竞态而崩溃。返回
+                # False 让 UI 保持禁用并提示重启本程序。
+                ok = False
                 self._log("[core] 停止超时：worker 未在 20s 内退出"
-                          "（疑似 pjsua 内部阻塞，建议重启本程序）")
-            self._worker = None
+                          "（旧协议栈仍在销毁，本程序需重启后才能再次启动）")
+            else:
+                self._worker = None
+        return ok
 
     def worker_alive(self) -> bool:
         """worker 线程是否存活（UI 看门狗用）。"""
@@ -284,27 +300,58 @@ class GbDevice(SipEvents):
                 self._sip.hangup_call(call_id)
             except Exception:
                 pass
-        self._drain_until_idle(timeout=3.0)
-        # 注销由本方法唯一发起。关键：必须等注销事务真正结束（收到 200/4xx
-        # 或超时）后再 shutdown；否则 pjsua_acc_del() 的 destroy_regc(force)
-        # 会销毁 regc，使平台返回的 401 挑战无法应答，注销 REGISTER 永远
-        # 得不到鉴权完成。
-        try:
-            self._sip.set_registration(False)
-            self._sip.wait_unregister_done(self.cfg.unregister_grace)
-        except Exception:
-            pass
+        # 仅在确实拆过呼叫（含广播呼叫）时才需要沉降窗口；空闲停止跳过。
+        # 此前排空等待(≤0.1s)+沉降(0.5s)无条件执行且位于注销 REGISTER 之前，
+        # 是「点停止 → 注销成功」本地延迟的主要来源（抓包实测 SIP 仅 ~8ms）。
+        self._drain_until_idle(
+            timeout=3.0,
+            settle=0.5 if (self._calls or bc_call is not None) else 0.0)
+        # 是否真正需要发注销 REGISTER：
+        # 判据是「平台侧是否曾经认定本设备在线」(_ever_registered)，而非
+        # 当前 state 是否 ONLINE。二者会分叉：注册成功后若心跳超时或注册
+        # 刷新失败，state 会回退到 RETRYING，但平台侧的注册记录在 expires
+        # （默认 3600s）到期前依然存在——此时跳过注销，设备会在平台侧残留
+        # 在线状态整整一小时。改用历史标志可覆盖这整类场景。
+        # 反之，若从未拿到 200 OK，平台本就无在线记录，发 Expires=0 注销
+        # 既无意义，又会与在途启动 REGISTER 抢 regc、触发最长 6 秒的
+        # PJSIP_EBUSY 空锤。此情形直接跳过「业务层」注销，走
+        # shutdown(unregister=False)；本地 regc 由 shutdown 内的
+        # acc.shutdown()（pjsua_acc_del）→ destroy_regc(force) **强制**销毁
+        # （不等在途事务），平台侧无在线记录，无需、也无法注销。
+        unreg_done = False
+        if self._ever_registered:
+            try:
+                self._sip.set_registration(False)
+                unreg_done = self._sip.wait_unregister_done(self.cfg.unregister_grace)
+            except Exception:
+                pass
+            # 服务器已确认注销（或已超时放弃）——此刻「逻辑上已离线」，立即把
+            # UI 翻成「未注册」，不必等 libDestroy（pjsua 协议栈销毁常耗时 ~1s）。
+            # 启动/停止按钮的重新使能仍由主窗口在 dev.stop() 返回后统一处理，
+            # 避免「界面已可重开」与「旧协议栈仍在销毁」竞态。
+            self._set_state(RegState.IDLE)
+            # 显式留痕：此行日志时间即「未注册」上屏时刻，比「已停止」早约
+            # 一个 libDestroy 耗时，便于核对 UI 刷新与整体停止耗时的分解。
+            self._log("注销已确认，界面置为未注册" if unreg_done
+                      else "注销未确认（超时/异常），界面置为未注册")
+        else:
+            # 从未在线：无需（也无法）注销，直接置 IDLE 并销毁协议栈。
+            self._set_state(RegState.IDLE)
+            self._log("从未在线（无 200 OK），跳过注销，直接销毁协议栈")
+        self._ever_registered = False
         self._sip.shutdown(unregister=False)
-        self._set_state(RegState.IDLE)
         self._log("已停止")
 
-    def _drain_until_idle(self, timeout: float) -> None:
+    def _drain_until_idle(self, timeout: float, settle: float = 0.5) -> None:
         """排空事件队列，让 pjsua 回送的 DISCONNECTED 等事件被本线程处理。
 
         worker 主循环已退出，但 pjsua 内部线程仍会把 DISCONNECTED 投递到队列；
         若不处理，drop_call 不会执行、pjsip 调用字典不清空，且 pjsua 内部呼叫
         拆链未完成，随后 libDestroy 会踩到仍在析构的呼叫。这里主动排空，复刻
         「正常运行中收到 BYE」的安全时序；排空后给 pjsua 内部线程一个沉降窗口。
+
+        settle：沉降秒数，仅在确实拆过呼叫时为正。空闲停止（无任何呼叫）
+        传 0 跳过沉降——此时无呼叫/媒体拆链，无物可沉，等待纯属白耗。
         """
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
@@ -320,22 +367,55 @@ class GbDevice(SipEvents):
                 self._log(f"[core] drain 异常({kind}): {e}")
             if not self._calls:
                 break
-        # 给 pjsua 内部线程完成呼叫/媒体拆链的沉降时间
-        time.sleep(0.5)
+        # 给 pjsua 内部线程完成呼叫/媒体拆链的沉降时间（无拆链时跳过）
+        if settle > 0:
+            time.sleep(settle)
 
     # ---------------- 注册状态 ----------------
 
     def _on_reg_state(self, ev: RegStateEvent) -> None:
-        if ev.is_active and ev.code == 200:
+        # 必须先把「注册失效」(is_active=False) 与「注册结果」分流：
+        # 注销被服务端确认时 pjsua 回调的是 is_active=False + code=200，
+        # 旧实现只看 code 是否在 200，把它判成「注册未成功」并置 RETRYING、
+        # 把重试时刻推后整整一个注册间隔——表现为「心跳超时后长期不上线」。
+        if not ev.is_active:
+            if self._stop.is_set():
+                # 停机流程中本端主动注销的回执：状态由 _teardown 统一收敛，
+                # 此处只留痕，绝不再触发重注册（否则会与销毁流程抢 regc）。
+                self._log(f"注销已被服务端确认 ({ev.code} {ev.reason})")
+                return
+            ok = 200 <= ev.code < 300
+            if ok:
+                self._log(f"注册被服务端解除 ({ev.code} {ev.reason})，将尽快重新注册")
+            else:
+                self._log(f"注册未成功: {ev.code} {ev.reason}")
+            if self.state == RegState.IDLE:
+                return
+            # 重试时刻只在「刚转入 RETRYING」时设定一次；已在 RETRYING 中则
+            # 只刷新原因、不再推迟。旧实现每次失败回调都 now+注册间隔，
+            # 平台持续拒绝时重试会被无限向后推（P1-8）。
+            fresh = self.state != RegState.RETRYING
+            self._set_state(RegState.RETRYING, f"{ev.code} {ev.reason}")
+            if fresh:
+                # 被服务端解除（2xx）属「平台仍在线、只是注销了本端」，尽快重注册；
+                # 注册失败则按配置的注册间隔退避，避免与 pjsua 的自动重试叠加重锤。
+                self._next_retry_at = time.monotonic() + (
+                    2 if ok else self.cfg.register_retry_interval)
+            return
+
+        if ev.code == 200:
             self._set_state(RegState.ONLINE)
+            self._ever_registered = True
             self._ka_pending = 0
             self._last_ka_sent = 0.0
             self._log("注册成功 (200 OK)")
         else:
             self._log(f"注册未成功: {ev.code} {ev.reason}")
             if self.state != RegState.IDLE and not self._stop.is_set():
+                fresh = self.state != RegState.RETRYING
                 self._set_state(RegState.RETRYING, f"{ev.code} {ev.reason}")
-                self._next_retry_at = time.monotonic() + self.cfg.register_retry_interval
+                if fresh:
+                    self._next_retry_at = time.monotonic() + self.cfg.register_retry_interval
 
     def _on_tick(self) -> None:
         # 停机流程中不再做心跳/重注册判定，避免与 _teardown 的注销注册
@@ -373,10 +453,15 @@ class GbDevice(SipEvents):
                 self._log(f"心跳连续 {self._ka_pending} 次超时，判定平台离线，重新注册")
                 self._ka_pending = 0
                 self._set_state(RegState.RETRYING, "心跳超时")
-                try:
-                    self._sip.set_registration(False)
-                except Exception:
-                    pass
+                # 直接重注册，**不再先发注销 REGISTER**（旧实现）：
+                # 1) GB28181 语义下心跳丢失只需重新注册；发 Expires=0 注销会让
+                #    平台先标记离线再上线，产生无谓的上下线抖动与告警；
+                # 2) 那次注销的回执（is_active=False + 200）会把 stack 层的
+                #    _unregistering 永久置位，污染此后所有「注销完成」判定，
+                #    使停止时的 wait_unregister_done() 提前返回、注销被强杀；
+                # 3) 注销与随后的重注册会争抢同一个 regc，触发 EBUSY 空锤。
+                # pjsua 侧若仍有在途注册事务，本次 set_registration(True) 会
+                # 返回 EBUSY，由 RETRYING 分支在下一个间隔重试。
                 self._next_retry_at = now + 2
         elif self.state == RegState.RETRYING and now >= self._next_retry_at:
             self._set_state(RegState.REGISTERING)
@@ -391,8 +476,11 @@ class GbDevice(SipEvents):
             # 彻底无响应且 pjsua 自动重试也未产生回调）时，周期性重新发起
             # 注册，避免永久停留在「注册中」——那会导致心跳/日志整体停摆
             # 而 UI 仍显示运行（无法区分「在线安静」与「卡死」）。
+            # 上限 5 分钟：旧实现取 max(60, expires+15)（默认 3615s≈1 小时），
+            # 兜底形同虚设；pjsua 自带 retryIntervalSec 重试与本兜底并列，
+            # 取 5 分钟既能兜住静默丢包，又不会与 pjsua 的重试节奏脱节。
             if now - self._reg_pending_since >= max(
-                    60, self.cfg.register_expires + 15):
+                    60, min(self.cfg.register_expires // 3, 300)):
                 self._reg_pending_since = now
                 self._log("长时间无注册结果，重新发起注册")
                 try:
@@ -633,7 +721,9 @@ class GbDevice(SipEvents):
         subject = build_subject(source_id, cfg.device_id, "0", str(self._bc_seq))
         offer = build_audio_offer(cfg.device_id, self.local_ip,
                                  cfg.broadcast_media_port, self._make_ssrc())
-        to_uri = f"sip:{source_id}@{cfg.server_domain}"
+        # 广播 INVITE 经平台转发，目标 host:port 与注册/心跳一致，
+        # 由「服务器地址+端口」派生（而非服务器域），保证端口字段全局生效。
+        to_uri = f"sip:{source_id}@{cfg.server_hostport}"
         try:
             call_id = self._sip.make_call(to_uri, subject, offer)
         except Exception as e:
