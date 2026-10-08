@@ -62,14 +62,26 @@ def _get_header(raw_headers: str, name: str) -> str:
     return ""
 
 
+#: setRegistration 遇 PJSIP_EBUSY 时的退避重试次数（每次 0.1s）。
+#: 详见 PjsipStack.set_registration 中关于停止耗时的说明。
+_EBUSY_RETRY_MAX = 20
+
+
 class _LogWriter(pj.LogWriter):
     def __init__(self, events: SipEvents):
         super().__init__()
         self._events = events
+        # 退避重试期间临时静音「注册事务忙(PJSIP_EBUSY)」的 pjsua 内部高频
+        # ERROR：这类错误是预期内的瞬时态，逐条打印只会产生刷屏噪音，最终
+        # 成败由上层 set_registration / _teardown 的汇总日志体现，无需逐条输出。
+        self.quiet_ebusy = False
 
     def write(self, entry):
         try:
-            self._events.on_log(entry.level, entry.msg.rstrip("\r\n"))
+            msg = entry.msg.rstrip("\r\n")
+            if self.quiet_ebusy and "Object is busy" in msg:
+                return
+            self._events.on_log(entry.level, msg)
         except Exception:
             pass
 
@@ -314,10 +326,42 @@ class PjsipStack(SipStack):
             except Exception:
                 pass
 
-        # 关键：在账号仍存活时、于已注册线程上**显式**调用 libDestroy，由
-        # pjsua_destroy 统一强制拆除账号/呼叫/媒体/传输。这保证了 libDestroy 与
-        # 账号的可靠时序——避免提前删除账号导致 libDestroy 触碰已释放内存（「呼叫
-        # 中停止」闪退的底层根因：空闲停止正常、仅呼叫活跃时点停止才崩）。
+        # 在 libDestroy 之前**显式关闭账号**（pjsua2 Account.shutdown() → C 层
+        # pjsua_acc_del）。这是「跳过注销仍卡数秒」的根治点：pjsua_destroy2
+        # （libDestroy 内部，见 pjsua_core.c:2006-2058）会遍历所有仍持有 regc 的
+        # 账号，再次发起注销并进入 busy_sleep(50) 等待循环，最多阻塞 unreg_timeout
+        # （默认约 4s），只要 regc 不为空就一直阻塞——哪怕业务层早已 skip 了自己的
+        # 注销。本工具频繁「启动后立刻停止」，在途启动 REGISTER 尚未应答，regc 一直
+        # 存在，于是 libDestroy 被这条在途事务拖住数秒，服务器完全不可达时甚至达
+        # SIP 事务超时（~32s）。
+        # 主动 acc.shutdown() 触发 pjsua_acc_del → destroy_regc(force)，**强制**销毁
+        # regc 与在途事务（不等待），使随后 pjsua_destroy2 的等待循环因 regc==NULL
+        # 立即跳过，停止耗时从「数秒~32s」降到 pjsua 固有沉降（约 1s）。
+        # 安全性：device._teardown 已在此之前 hangup 并排空所有呼叫，此处不存在活跃
+        # Call 包装对象；账号在 libDestroy 之前（库存活时）关闭，与 Call 包装析构顺序
+        # 要求一致，不会触发 pjsua_call.c:2600 断言。pjsua_destroy2 末尾对 invalid
+        # 账号直接 continue，无 double-free。（注：pjsua2 的 Account 没有 delete()
+        # 方法，只能用 shutdown() 对应 pjsua_acc_del，否则运行时 AttributeError。）
+        lw = self._log_writer
+        if self._acc is not None:
+            try:
+                if lw is not None:
+                    lw.quiet_ebusy = True  # 屏蔽 shutdown 内可能的 Object is busy 噪声
+                self._acc.shutdown()
+            except Exception as e:
+                try:
+                    self._events.on_log(1, f"[sip] acc.shutdown 异常: {e}")
+                except Exception:
+                    pass
+            finally:
+                if lw is not None:
+                    lw.quiet_ebusy = False
+            self._acc = None
+
+        # 关键：于已注册线程上显式调用 libDestroy，由 pjsua_destroy 统一强制拆除
+        # 媒体/传输。账号已删除（regc 已强制销毁），此处不再被在途注册事务阻塞。
+        if lw is not None:
+            lw.quiet_ebusy = True
         try:
             if self._ep is not None:
                 self._ep.libDestroy()
@@ -326,10 +370,11 @@ class PjsipStack(SipStack):
                 self._events.on_log(1, f"[sip] libDestroy 异常: {e}")
             except Exception:
                 pass
+        finally:
+            if lw is not None:
+                lw.quiet_ebusy = False
 
-        # 丢弃 Python 引用；此后 ~Account/~Endpoint 均为安全空操作（状态已
-        # DESTROYED，isValid() 为假；且 pjsua_destroy2 对重入有守卫）。
-        self._acc = None
+        # 丢弃 Python 引用；此后 ~Endpoint 为安全空操作（状态已 DESTROYED）。
         self._log_writer = None
         self._ep = None
         import gc
@@ -381,24 +426,43 @@ class PjsipStack(SipStack):
         """
         if self._acc is None:
             raise RuntimeError("account not created")
-        if not enable:
+        if enable:
+            # 关键复位：_unregistering 只描述「最近一次 set_registration 的目标」。
+            # 旧实现从不复位，一旦走过一次注销（例如旧的心跳超时重注册路径），
+            # 该标志永久为真，此后**任何** is_active=False 的注册回调都会误置
+            # _unreg_done，使 wait_unregister_done() 立即返回——注销事务被误判
+            # 完成，紧接着的 acc.shutdown() 会强杀仍在途的注销 REGISTER。
+            self._unregistering = False
+            self._unreg_done.clear()
+        else:
             # 标记「正在注销」：_notify_reg_state 会据此置位注销完成信号，
             # 供 shutdown() 在销毁账号前等待事务真正结束。
             self._unreg_done.clear()
             self._unregistering = True
         last_err: Exception | None = None
         # PJ_EBUSY(171001) 表示 regc 上仍有在途注册事务（可能是 pjsua 的
-        # 自动 refresh 或心跳超时后的自动重注册）。该事务通常在一个 SIP
-        # 事务超时内结束，因此给予约 6 秒的退避重试窗口。
-        for attempt in range(60):
-            try:
-                self._acc.setRegistration(enable)
-                return
-            except pj.Error as e:
-                last_err = e
-                if getattr(e, "status", 0) != 171001:   # 仅对 PJSIP_EBUSY 重试
-                    raise
-                time.sleep(0.1)
+        # 自动 refresh 或心跳超时后的自动重注册）。退避上限取 2 秒
+        # （_EBUSY_RETRY_MAX × 0.1s），与业务层 unregister_grace 对齐：
+        # 无论如何 shutdown() 内的 acc.shutdown() 最终都会强制销毁 regc，
+        # 继续空锤只是把停止耗时白白拉长（旧值 60 次 = 6 秒）。重试期间
+        # pjsua 内部会为每次失败的 setRegistration 打印 ERROR 行，这里临时
+        # 静音，避免「服务器不可达时停止设备」刷出上百行 Object is busy 噪声。
+        lw = self._log_writer
+        if lw is not None:
+            lw.quiet_ebusy = True
+        try:
+            for attempt in range(_EBUSY_RETRY_MAX):
+                try:
+                    self._acc.setRegistration(enable)
+                    return
+                except pj.Error as e:
+                    last_err = e
+                    if getattr(e, "status", 0) != 171001:   # 仅对 PJSIP_EBUSY 重试
+                        raise
+                    time.sleep(0.1)
+        finally:
+            if lw is not None:
+                lw.quiet_ebusy = False
         if last_err is not None:
             raise last_err
 

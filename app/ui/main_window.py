@@ -45,7 +45,9 @@ class DeviceBridge(QObject, DeviceEvents):
     sig_broadcast_stream = Signal(str)
     # 「停止完成」由后台线程 emit；Qt 会把跨线程信号投递到本对象所属线程
     # （UI 线程）执行槽函数，从而安全更新控件。
-    sig_stopped = Signal(str)
+    # 参数：(错误文本, 是否彻底停止)。第二参 False 表示 dev.stop() 超时返回、
+    # 旧协议栈仍在后台销毁，此时绝不能恢复可启动状态（进程级单实例竞态）。
+    sig_stopped = Signal(str, bool)
 
     def on_log(self, msg: str) -> None:
         self.sig_log.emit(msg)
@@ -87,6 +89,11 @@ class MainWindow(QMainWindow):
         self.device: GbDevice | None = None
         self.bridge = DeviceBridge()
         self._dirty = False
+        # 停止中标记：dev.stop() 尚未返回（旧 pjsua2 Lib 的 libDestroy 仍在进行）。
+        # 期间启动按钮保持禁用——pjsua2 Lib 是进程级单实例，旧 Lib 未销毁前新建
+        # 会触发竞态崩溃。因此「未注册 + 启动可点」严格等价于「旧 Lib 已彻底销毁、
+        # 可安全重启」，状态机无矛盾（见 _set_stopping / _finish_stop）。
+        self._stopping = False
         # 恢复窗口时临时抑制「最小化→收起」逻辑，避免 showNormal 触发的
         # WindowStateChange 又被 changeEvent 误判为最小化而重新隐藏窗口。
         self._suppress_min_hide = False
@@ -302,7 +309,10 @@ class MainWindow(QMainWindow):
         return f"{type(e).__name__}（无异常详情）"
 
     def _on_start(self) -> None:
-        if self.device is not None:
+        # 防御：停止流程（旧协议栈 libDestroy 仍在进行）期间启动按钮处于禁用态，
+        # 此处仅在被异常路径触发时兜底返回。绝不延后、绝不自动重启——「未注册 +
+        # 启动可点」只在 _finish_stop 之后出现，届时旧 Lib 已销毁，可安全启动。
+        if self._stopping or self.device is not None:
             return
         self.settings.read_into(self.cfg)
         err = self._validate(self.cfg)
@@ -334,45 +344,102 @@ class MainWindow(QMainWindow):
     def _on_stop(self) -> None:
         """停止设备。
 
-        GbDevice.stop() 是阻塞的：worker 内部要完成「注销 REGISTER 事务」
-        （最长 unregister_grace 秒）再销毁协议栈，外层 join 又最多等 5 秒。
-        若直接在 UI 线程调用会导致窗口假死，因此放到后台线程执行。
+        GbDevice.stop() 是阻塞的：worker 内部要完成 teardown（挂断呼叫排空、
+        注销 REGISTER 事务、销毁协议栈 libDestroy）再返回，外层 join 最多等 20 秒。
+        若直接在 UI 线程调用会导致窗口假死，因此放到后台线程执行；结果经跨线程
+        Signal (sig_stopped) 回到 UI 线程的 _finish_stop 收尾。
 
-        注意：结果回调必须用跨线程 Signal 回到 UI 线程。切勿使用
-        ``QTimer.singleShot(0, cb)`` —— 无 receiver 时它会被投递到**调用线程**
-        的事件循环，而普通 threading.Thread 没有事件循环，回调将永不触发
-        （表现为界面永久停留在「运行中」）。最小复现见
+        注意：结果回调必须用跨线程 Signal，切勿用 ``QTimer.singleShot(0, cb)`` ——
+        无 receiver 时它会被投递到**调用线程**（普通 threading.Thread 无事件循环），
+        回调将永不触发（表现为界面永久停留「停止中」）。最小复现见
         tests/probe_qt_singleShot_thread.py。
         """
         dev = self.device
         if dev is None:
             return
         self.device = None               # 先摘引用，避免停止期间误触发其它操作
-        self.act_stop.setEnabled(False)
+        self._stopping = True            # 进入停止中（旧协议栈 libDestroy 仍在进行）
+        # 立即把界面切到「停止中」忙碌态：禁用启动/停止按钮与参数编辑，状态栏
+        # 显式「停止中」。这是状态机的关键不变量——「未注册 + 启动可点」只在
+        # _finish_stop（dev.stop() 已返回、旧 Lib 已销毁）时才出现，杜绝
+        # 「界面显示已停止却点不了启动」的矛盾，也彻底移除延后/自动重启逻辑。
+        self._set_stopping()
+        # 立即停止看门狗：停止是预期内的主动行为，teardown 期间 worker 不再走
+        # 主循环、tick 不更新，看门狗若仍运行会误报「线程阻塞」。
+        self._wd_timer.stop()
         self.log.append("[ui] 停止设备…")
 
         def _worker() -> None:
             err = ""
+            clean = True
             try:
-                dev.stop()
+                clean = dev.stop()
             except Exception as e:      # pragma: no cover - 仅记录
                 err = self._exc_text(e)
+                clean = False
             # 跨线程 emit：槽函数 _finish_stop 在 UI 线程执行
-            self.bridge.sig_stopped.emit(err)
+            self.bridge.sig_stopped.emit(err, clean)
 
         threading.Thread(target=_worker, name="ui-stop", daemon=True).start()
 
-    def _finish_stop(self, err: str = "") -> None:
-        """在 UI 线程恢复「未运行」界面状态。"""
-        self.status.reset()
-        self._set_running(False)
+    def _set_stopping(self) -> None:
+        """进入「停止中」：旧协议栈 libDestroy 仍在进行，界面进入忙碌态。
+
+        关键不变量：启动按钮在此阶段**禁用**。pjsua2 的 Lib 是进程级单实例，
+        旧 Lib 未销毁前新建 Lib 会触发竞态崩溃；因此「启动可点」严格等价于
+        「旧 Lib 已彻底销毁、可安全重启」。状态栏显示「停止中」而非「未注册」，
+        既如实反映进度，也避免用户误以为可以立即启动。
+        """
+        self.act_start.setEnabled(False)
+        self.act_stop.setEnabled(False)
+        self.settings.set_editable(False)
+        self.ck_broadcast.setEnabled(False)
+        self.vu.reset()
+        self.lb_sb_state.setText("停止中")
+        self.lb_sb_state.setStyleSheet("color:#909399;font-weight:600;")
+
+    def _finish_stop(self, err: str = "", clean: bool = True) -> None:
+        """UI 线程收尾停止流程。
+
+        dev.stop() 正常返回（clean=True）即代表旧协议栈（libDestroy）已彻底
+        销毁，单实例竞态风险解除。此刻才把界面从「停止中」翻转为「未注册」
+        并重新使能启动按钮——两者永远同步，状态机无矛盾。若停止由退出流程
+        触发，则直接退出应用。
+
+        clean=False 表示 dev.stop() 超时返回：worker 仍在后台销毁协议栈。
+        pjsua2 的 Lib 是进程级单实例，此时新建协议栈会竞态崩溃，因此**绝不**
+        恢复可启动状态，界面保持禁用并提示重启本程序。
+        """
+        self._stopping = False
+        # 先落日志再分支：早期实现把退出分支放在最前，导致「运行中关窗退出」
+        # 时的停止异常被整条吞掉，用户永远看不到。
         if err:
             self.log.append(f"[ui] 停止时异常: {err}")
+        if not clean:
+            self.log.append("[ui] 停止超时：旧协议栈未完成销毁，为保证安全"
+                            "不再允许启动，请重启本程序")
+            self.lb_sb_state.setText("停止超时")
+            self.lb_sb_state.setStyleSheet("color:#f56c6c;font-weight:600;")
+            self.act_start.setEnabled(False)
+            self.act_stop.setEnabled(False)
+            # 退出流程中遇此情况仍要退出：进程结束会随 daemon 线程一并终止。
+            if getattr(self, "_quit_after_stop", False):
+                self._quit_after_stop = False
+                QApplication.quit()
+                return
+            QMessageBox.warning(self, "停止未完成",
+                                "设备停止超时，协议栈未能完成销毁。\n"
+                                "为避免崩溃，本程序需重启后才能再次启动设备。")
+            return
         self.log.append("[ui] 已停止")
         # 运行中关窗触发的停止：完成后真正退出应用（见 closeEvent）
         if getattr(self, "_quit_after_stop", False):
             self._quit_after_stop = False
             QApplication.quit()
+            return
+        self.status.reset()
+        self._set_running(False)
+
     def _local_addr_text(self, running: bool) -> str:
         """「本机地址」显示文本。
 
@@ -398,14 +465,17 @@ class MainWindow(QMainWindow):
         # 「国标广播」是配置项，同样只在停止状态可改；运行中灰化。
         self.ck_broadcast.setEnabled(not running)
         self.vu.reset()
-        self.lb_sb_state.setText("在线" if running else "未注册")
-        self.lb_sb_state.setStyleSheet(
-            "color:#67c23a;font-weight:600;" if running
-            else "color:#888;font-weight:600;")
         if running:
+            # 启动成功仅代表设备进程已拉起并进入「注册中」；真正的「在线」
+            # 必须等服务端回 200 OK（见 _on_reg_state 的 ONLINE 分支）。此处
+            # 绝不能写成「在线」，否则服务端不可达时也会误报在线（需求 1）。
+            self.lb_sb_state.setText("注册中")
+            self.lb_sb_state.setStyleSheet("color:#e6a23c;font-weight:600;")
             self._wd_alerting = False
             self._wd_timer.start()
         else:
+            self.lb_sb_state.setText("未注册")
+            self.lb_sb_state.setStyleSheet("color:#888;font-weight:600;")
             self._wd_timer.stop()
             # 停止/未启动时，广播状态由配置开关决定：勾选=空闲，未勾选=未启用
             self.status.set_broadcast_state(
@@ -480,7 +550,11 @@ class MainWindow(QMainWindow):
         super().changeEvent(event)
 
     def _on_reg_state(self, state: RegState, detail: str) -> None:
+        # 状态页仍反映设备侧注册事件（无害）；但停止流程中状态栏保持「停止中」，
+        # 不随即将销毁的设备的注册态跳动，避免与「未注册=可启动」的不变量冲突。
         self.status.set_reg_state(state, detail)
+        if self._stopping:
+            return
         self.lb_sb_state.setText(state.value)
         color = {"在线": "#67c23a", "注册中": "#e6a23c",
                  "重试中": "#f56c6c"}.get(state.value, "#888")
