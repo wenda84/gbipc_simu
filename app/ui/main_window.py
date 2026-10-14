@@ -13,7 +13,7 @@ from PySide6.QtCore import QEvent, QObject, QTimer, Signal
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
     QCheckBox, QApplication, QLabel, QMainWindow, QMenu, QMessageBox,
-    QStatusBar, QSystemTrayIcon, QTabWidget, QToolBar,
+    QStatusBar, QSystemTrayIcon, QTabWidget, QToolBar, QHBoxLayout, QWidget, QStyle,
 )
 
 from ..core.config import (
@@ -28,7 +28,7 @@ from ..core.device import DeviceEvents, GbDevice, RegState
 from .settings_page import SettingsPage
 from .status_page import StatusPage
 from .log_page import LogPage
-from .volume_meter import VolumeMeter
+from .volume_meter import MODE_ACTIVE, MODE_ARMED, MODE_OFF, VolumeMeter
 
 APP_TITLE = "GB28181 IPC 模拟工具"
 
@@ -262,10 +262,20 @@ class MainWindow(QMainWindow):
         tb.addWidget(self.ck_broadcast)
 
         self.vu = VolumeMeter(segments=8)
-        # 工具栏内的控件由 QWidgetAction 托管可见性：对控件本身 setVisible()
-        # 会被工具栏布局重新显示回去，必须操作 addWidget() 返回的 action。
-        self.act_vu = tb.addWidget(self.vu)
-        self.act_vu.setVisible(bool(self.cfg.broadcast_enabled))
+        self.vu.set_mode(MODE_ARMED if self.cfg.broadcast_enabled else MODE_OFF)
+        # 音量框与「国标广播」之间的间隔 = 当前工具栏默认间隔的 2 倍：
+        # 用带左侧间距的容器包裹，工具栏默认间隔 S 作用在「勾选框↔容器」之间，
+        # 容器内再留 S 的左间距，总间隔 ≈ S × 2。部分风格 PM_ToolBarItemSpacing
+        # 返回 0，给一个基础值兜底，保证间隔可见。
+        gap = self.style().pixelMetric(QStyle.PM_ToolBarItemSpacing)
+        if gap <= 0:
+            gap = 4
+        vu_wrap = QWidget()
+        vu_lay = QHBoxLayout(vu_wrap)
+        vu_lay.setContentsMargins(gap, 0, 0, 0)
+        vu_lay.setSpacing(0)
+        vu_lay.addWidget(self.vu)
+        tb.addWidget(vu_wrap)
 
         # 右下角状态栏：注册状态常驻可见
         self.sb = QStatusBar()
@@ -278,7 +288,7 @@ class MainWindow(QMainWindow):
         self.bridge.sig_reg_state.connect(self._on_reg_state)
         self.bridge.sig_call_state.connect(self._on_call_state)
         self.bridge.sig_stream_stats.connect(self.status.set_stream_stat)
-        self.bridge.sig_broadcast_state.connect(self.status.set_broadcast_state)
+        self.bridge.sig_broadcast_state.connect(self._on_broadcast_state)
         self.bridge.sig_broadcast_level.connect(self._on_broadcast_level)
         self.bridge.sig_broadcast_stream.connect(self.status.set_broadcast_stream)
         self.bridge.sig_stopped.connect(self._finish_stop)
@@ -465,6 +475,7 @@ class MainWindow(QMainWindow):
         # 「国标广播」是配置项，同样只在停止状态可改；运行中灰化。
         self.ck_broadcast.setEnabled(not running)
         self.vu.reset()
+        self._update_vu_mode()
         if running:
             # 启动成功仅代表设备进程已拉起并进入「注册中」；真正的「在线」
             # 必须等服务端回 200 OK（见 _on_reg_state 的 ONLINE 分支）。此处
@@ -520,13 +531,30 @@ class MainWindow(QMainWindow):
 
     # ---------------- 国标广播 ----------------
 
+    def _update_vu_mode(self, bc_text: str = "") -> None:
+        """根据勾选状态与广播呼叫状态刷新音量框模式。"""
+        if not self.cfg.broadcast_enabled:
+            self.vu.set_mode(MODE_OFF)
+            return
+        # 呼叫已发起（呼叫中）或已建立（广播中）即进入活跃态：底色转绿、按实际音量
+        # 点亮亮绿；仅「勾选但未发起呼叫」（空闲）时保持暗绿待机。
+        if "呼叫中" in bc_text or "广播中" in bc_text:
+            self.vu.set_mode(MODE_ACTIVE)
+        else:
+            self.vu.set_mode(MODE_ARMED)
+
+    def _on_broadcast_state(self, text: str) -> None:
+        """广播状态变化：同步刷新状态页与音量框模式。"""
+        self.status.set_broadcast_state(text)
+        self._update_vu_mode(text or "")
+
     def _on_broadcast_toggled(self, checked: bool) -> None:
-        """勾选后启用广播能力并显示音量提示框；取消则隐藏。
+        """勾选后启用广播能力，音量框切换为暗绿色待机；取消则回到灰色。
 
         与其它配置项一致：仅写入内存配置并标记「未保存」，由「保存配置」落盘。
         """
         self.cfg.broadcast_enabled = bool(checked)
-        self.act_vu.setVisible(bool(checked))
+        self._update_vu_mode()
         self.vu.reset()
         self._mark_dirty()
         # 未运行时，广播状态随开关实时变化：勾选=空闲，未勾选=未启用
