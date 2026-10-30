@@ -65,7 +65,7 @@ manufacturer = "Simulator"
 # 型号
 model = "GBIPC-SIM-1000"
 # 固件版本
-firmware = "V3.0.0"
+firmware = "V3.5.0"
 # 通道号
 channel = 1
 # 行政区划代码（6 位）
