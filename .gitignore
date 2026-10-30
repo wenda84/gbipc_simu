@@ -5,3 +5,10 @@ dist/
 *__pycache__/
 *pyc
 *.log
+
+# 本地构建环境与第三方源码：磁盘上保留，不入库
+# runtime/ = 内嵌 CPython + venv312（约 4700 文件 / 330MB 历史体积）
+# 新 clone 需自行准备：安装 Python 3.12 并建 runtime/venv312（见 docs/工程说明.md）
+runtime/
+# tools/pjproject-* = 第三方 SIP 源码树（约 139MB），仅构建期参考用
+tools/pjproject-*/

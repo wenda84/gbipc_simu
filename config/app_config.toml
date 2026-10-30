@@ -4,7 +4,7 @@
 # 本机 IP；空字符串 = 启动时按到平台的路由自动探测
 local_ip = ""
 # 本地 SIP 端口（UDP）
-local_sip_port = 5088
+local_sip_port = 0
 
 [server]
 # SIP 服务器 ID（20 位）
@@ -38,7 +38,7 @@ unregister_grace = 2.0
 
 [media]
 # 本机媒体端口（UDP 源端口 / TCP 本地端口）
-local_media_port = 15088
+local_media_port = 0
 # 点播 PS 媒体流文件（相对工程根 / 安装根的路径）
 ps_file = "resource/ps_samples/HK264.ps"
 # 是否循环播放
@@ -55,6 +55,7 @@ broadcast_jitter_ms = 60
 broadcast_volume_percent = 100
 # 入流中断判定（秒），超时按附录 M 释放链路
 broadcast_rtp_timeout = 300.0
+broadcast_invite_timeout = 30.0
 
 [device_info]
 # 设备名称（Catalog 应答）

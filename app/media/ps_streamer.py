@@ -16,24 +16,65 @@ import time
 from typing import Callable, Optional
 
 PS_HEADER = b'\x00\x00\x01\xba'
-VIDEO_PES_HEADER = b'\x00\x00\x01\xe0'
-AUDIO_PES_HEADER = b'\x00\x00\x01\xc0'
 TS_HZ = 90000
 MTU = 1400
 MAX_PACING_GAP_SECONDS = 5
 MAX_PACING_GAP_TICKS = MAX_PACING_GAP_SECONDS * TS_HZ
 MIN_LOOP_TIMESTAMP_STEP = 1
+#: 解析不到 PTS 时的兜底发送码率（bit/s）：只要按字节匀速发，
+#: 就不会出现「整段 PS 以 CPU 速度倾泻 -> 平台侧丢包/解析失步」。
+FALLBACK_BYTE_RATE_BPS = 4_000_000
 
 
 def _parse_pts(data: bytes):
-    if len(data) < 19:
+    """从 PES（以 00 00 01 <stream_id> 起）解析 33-bit PTS。
+
+    ISO 13818-1 布局：data[6] = '10'+scrambling...，data[7] 高 2 位为
+    PTS_DTS_flags，data[8] = PES_header_data_length，data[9..13] 为 PTS
+    （PTS+DTS 时 DTS 在 data[14..18]）。此前按 data[6] 取 flags、data[8]
+    取 PTS，与标准错位 1 字节 -> 时间戳错乱。
+    """
+    if len(data) < 14:
         return None
     pts_dts_flags = (data[7] >> 6) & 0x03
-    if pts_dts_flags in (0x02, 0x03):
+    if pts_dts_flags in (0x02, 0x03):  # 高两位含 PTS
         b1, b2, b3, b4, b5 = data[9:14]
         pts = (((b1 >> 1) & 0x07) << 30) | ((((b2 << 8) | b3) >> 1) << 15) | (((b4 << 8) | b5) >> 1)
         return pts
     return None
+
+
+def _find_first_pes(seg: bytes, scan_limit: int = 256):
+    """在「从 pack 头开始的一段数据」里找到第一个 PES 起始。
+
+    返回 ``(stream_id, offset)``，找不到返回 ``(None, -1)``。
+
+    MPEG-2 PS 的 pack 头固定 14 字节，其后的内容按标准是
+    system header(0xBB) / PSM(0xBC) / padding(0xBE/0xBF) 与 PES 的排列，
+    但实际文件里常夹杂 FF 填充乃至厂商自定义字节，所以不能直接用
+    ``pack[14:18]`` 假定 PES 位置。这里从第 14 字节起做**有上限**的顺序扫描：
+    找到的第一个起始码必然是某一类头部（不可能是载荷），跳过 system
+    header / PSM 后即可拿到 PES；上限 256 字节同时避免扫描进载荷造成误判。
+    """
+    pos = 14
+    end = min(len(seg), 14 + scan_limit)
+    while pos + 4 <= end:
+        i = seg.find(b'\x00\x00\x01', pos, end)
+        if i < 0:
+            return None, -1
+        sid = seg[i + 3]
+        if sid in (0xBB, 0xBC, 0xBE, 0xBF):        # system header / PSM / padding
+            if i + 6 > len(seg):
+                return None, -1
+            ln = int.from_bytes(seg[i + 4:i + 6], 'big')
+            pos = i + 6 + ln
+            continue
+        if sid == 0xB9:                            # program end
+            return None, -1
+        if 0xBD <= sid <= 0xEF:                    # PES：bd 私有 / c0-df 音频 / e0-ef 视频
+            return sid, i
+        return None, -1
+    return None, -1
 
 
 def analyze_ps_stream(file_content: bytes):
@@ -57,16 +98,22 @@ def analyze_ps_stream(file_content: bytes):
 
         pts = None
         payload_type = None
-        video_index = pack_data.find(VIDEO_PES_HEADER)
-        audio_index = pack_data.find(AUDIO_PES_HEADER)
-        if video_index != -1:
-            pts = _parse_pts(pack_data[video_index:])
-            if pts is not None:
-                payload_type = 'video'
-        elif audio_index != -1:
-            pts = _parse_pts(pack_data[audio_index:])
-            if pts is not None:
-                payload_type = 'audio'
+        # 定位本 pack 里第一个 PES 的起始。**不能写死第 15 字节**：pack 头
+        # 之后还可能跟 system header(0xBB)、PSM(0xBC)、FF 填充，甚至厂商
+        # 自定义字节（现场 HK264.ps 就是 14B pack 头 + ff ff + 4 字节自定义
+        # + system header）。旧实现按固定偏移取 PES，遇到这类文件会整段
+        # 解析不到 PTS -> 没有帧边界、没有流控 -> 全速倾泻，平台侧报
+        # "PS frame too large / PS resync limit exceeded"。
+        sid, pes_off = _find_first_pes(pack_data)
+        if sid is not None:
+            if 0xE0 <= sid <= 0xEF:
+                pts = _parse_pts(pack_data[pes_off:])
+                if pts is not None:
+                    payload_type = 'video'
+            elif 0xC0 <= sid <= 0xDF:
+                pts = _parse_pts(pack_data[pes_off:])
+                if pts is not None:
+                    payload_type = 'audio'
         ps_packs.append({'data': pack_data, 'pts': pts, 'type': payload_type, 'is_frame_end': False})
 
     unique_video_pts = set()
@@ -167,12 +214,22 @@ class PsStreamer:
         packs, vframes, aframes, loop_step = analyze_ps_stream(content)
         if not packs:
             raise ValueError(f"PS 文件无有效包: {ps_file}")
+        has_pts = any(p['pacing_pts'] is not None for p in packs)
         self._on_log(f"[media] PS 分析完成: {len(content)}B, {len(packs)} 包, "
                      f"视频帧 {vframes}, 音频帧 {aframes}")
+        if not has_pts:
+            # 一个 PTS 都没解析到：没有帧边界就无法按时间轴流控。此时若照旧
+            # 「不睡直接发」，相当于把整段素材瞬间灌给平台，UDP 会大面积丢包，
+            # 平台侧表现为「PS frame too large / PS resync limit exceeded」。
+            # 兜底改为按字节恒定码率发送，至少保证可解码的到达节奏。
+            self._on_log(f"[media] 警告：PS 未解析到任何 PTS，改按 "
+                         f"{FALLBACK_BYTE_RATE_BPS // 1000} kbps 恒定码率发送")
         self._open_socket()
         self._stop_event.clear()
         self._thread = threading.Thread(
-            target=self._send_loop, args=(packs, loop_step, play_times),
+            target=self._send_loop,
+            args=(packs, loop_step, play_times,
+                  0 if has_pts else FALLBACK_BYTE_RATE_BPS),
             name="ps-streamer", daemon=True)
         self._thread.start()
 
@@ -207,13 +264,22 @@ class PsStreamer:
         if self.protocol == "tcp":
             self._on_log(f"[media] TCP 主动连接 {self.dest_ip}:{self.dest_port} ...")
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(5)
-            if self.local_port:
-                s.bind(("0.0.0.0", self.local_port))
-            s.connect((self.dest_ip, self.dest_port))
-            s.settimeout(None)
+            try:
+                s.settimeout(5)
+                if self.local_port:
+                    s.bind(("0.0.0.0", self.local_port))
+                s.connect((self.dest_ip, self.dest_port))
+                s.settimeout(None)
+            except OSError:
+                # 绑定/连接失败时关掉半开的 socket：调用方（device._start_stream）
+                # 会换临时端口重试，不关会泄漏句柄。
+                try:
+                    s.close()
+                except OSError:
+                    pass
+                raise
             self._sock = s
-            self._on_log("[media] TCP 已连接")
+            self._on_log(f"[media] TCP 已连接（本机源端口 {s.getsockname()[1]}）")
         else:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             if self.local_port:
@@ -240,7 +306,8 @@ class PsStreamer:
         self._bytes_sent += len(packet)
         self._rtp_sent += 1
 
-    def _send_loop(self, packs, loop_step: int, play_times: int) -> None:
+    def _send_loop(self, packs, loop_step: int, play_times: int,
+                   byte_rate_bps: int = 0) -> None:
         play_count = 0
         last_ts = None
         try:
@@ -250,6 +317,7 @@ class PsStreamer:
                 start_time = time.monotonic()
                 start_pacing = None
                 last_pacing = None
+                pass_bytes = 0          # 本轮已发送字节（无 PTS 时的兜底流控用）
 
                 for pack in packs:
                     if self._stop_event.is_set():
@@ -281,6 +349,13 @@ class PsStreamer:
                         if last_pacing is None or pacing_pts > last_pacing:
                             last_pacing = pacing_pts
 
+                    elif byte_rate_bps and pass_bytes:
+                        # 兜底：按恒定码率匀速发送（仅在没有 PTS 时才会进来）
+                        expected = pass_bytes * 8.0 / byte_rate_bps
+                        sleep = expected - (time.monotonic() - start_time)
+                        if sleep > 0.001 and self._stop_event.wait(sleep):
+                            break
+
                     # RTP 分片发送
                     data, offset, total = pack['data'], 0, len(pack['data'])
                     while offset < total:
@@ -289,6 +364,7 @@ class PsStreamer:
                         is_last_chunk = offset >= total
                         marker = 1 if (is_last_chunk and pack['is_frame_end']) else 0
                         self._send_rtp(marker, ts, chunk)
+                        pass_bytes += len(chunk)
                     if pack['pts'] is not None:
                         last_ts = ts
 

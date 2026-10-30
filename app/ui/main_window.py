@@ -9,11 +9,18 @@ import os
 import threading
 import traceback
 
-from PySide6.QtCore import QEvent, QObject, QTimer, Signal
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtCore import (
+    QEvent, QObject, QPointF, QRect, QRectF, QSize, Qt, QTimer, Signal,
+)
+from PySide6.QtGui import (
+    QAction, QColor, QFontMetrics, QIcon, QPainter, QPalette, QPen, QPixmap,
+    QPolygonF,
+)
 from PySide6.QtWidgets import (
     QCheckBox, QApplication, QLabel, QMainWindow, QMenu, QMessageBox,
-    QStatusBar, QSystemTrayIcon, QTabWidget, QToolBar, QHBoxLayout, QWidget, QStyle,
+    QStatusBar, QStyleOptionToolButton, QSystemTrayIcon, QTabWidget, QToolBar,
+    QToolButton,
+    QHBoxLayout, QWidget, QStyle,
 )
 
 from ..core.config import (
@@ -31,6 +38,109 @@ from .log_page import LogPage
 from .volume_meter import MODE_ACTIVE, MODE_ARMED, MODE_OFF, VolumeMeter
 
 APP_TITLE = "GB28181 IPC 模拟工具"
+
+
+# 工具栏图标颜色：黑白单色（禁用态由 Qt 自动淡化，不需要另配一套）
+ICON_COLOR = "#303133"
+
+
+def _mono_icon(kind: str, side: int) -> QIcon:
+    """给「启动 / 停止 / 保存」绘制黑白单色图标。
+
+    ``side`` = 图标边长（逻辑像素），调用方按「文字墨迹高度 × 1.2」计算，
+    保证图标略高于文字、又不会顶破按钮高度。
+
+    kind: ``"play"`` 实心三角 / ``"stop"`` 实心方块 / ``"save"`` 软盘线框。
+    统一按 4 倍尺寸绘制再 ``setDevicePixelRatio(4)``，高 DPI 下不发糊；
+    三种形状的「视觉重量」做过配平（三角比方块略大才显得一样大）。
+    """
+    scale = 4
+    pm = QPixmap(side * scale, side * scale)
+    pm.fill(Qt.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.Antialiasing, True)
+    p.scale(scale, scale)
+    col = QColor(ICON_COLOR)
+    s = float(side)
+
+    if kind == "play":                      # ▶ 实心三角
+        p.setPen(Qt.NoPen)
+        p.setBrush(col)
+        p.drawPolygon(QPolygonF([QPointF(s * 0.26, s * 0.16),
+                                 QPointF(s * 0.26, s * 0.84),
+                                 QPointF(s * 0.82, s * 0.50)]))
+    elif kind == "stop":                    # ■ 实心圆角方块
+        p.setPen(Qt.NoPen)
+        p.setBrush(col)
+        p.drawRoundedRect(QRectF(s * 0.21, s * 0.21, s * 0.58, s * 0.58),
+                          s * 0.06, s * 0.06)
+    else:                                   # 软盘：线框盘体 + 顶部滑片 + 底部标签
+        # 盘体用圆角方形而**不做右上切角**：切角 + 顶部滑片在小尺寸下会被
+        # 误读成「卷角的文档」，方形盘体反而最像 3.5 寸软盘。
+        w = max(1.2, s * 0.078)
+        pen = QPen(col, w)
+        pen.setJoinStyle(Qt.MiterJoin)
+        p.setPen(pen)
+        p.setBrush(Qt.NoBrush)
+        p.drawRoundedRect(QRectF(s * 0.14, s * 0.14, s * 0.72, s * 0.72),
+                          s * 0.075, s * 0.075)
+        p.setPen(Qt.NoPen)
+        p.setBrush(col)
+        # 滑片与标签都与盘体边框齐平（贴边融合），像真软盘那样连成一体
+        p.drawRect(QRectF(s * 0.42, s * 0.14, s * 0.20, s * 0.22))   # 滑片
+        p.drawRect(QRectF(s * 0.26, s * 0.64, s * 0.48, s * 0.22))   # 标签
+    p.end()
+    pm.setDevicePixelRatio(scale)
+    return QIcon(pm)
+
+
+class CenterToolButton(QToolButton):
+    """内容严格居中的工具按钮。
+
+    QToolButton 在「按钮宽度 > 内容宽度」时会把「图标 + 文字」整块贴在左边
+    （Qt 的 CE_ToolButtonLabel 只在 ToolButtonTextOnly 时居中），三个按钮
+    统一等宽后文字就都偏左了。这里自绘：背景仍交给当前样式绘制
+    （hover / 按下 / 禁用底板与普通工具按钮完全一致），只有内容自己算位置，
+    保证水平居中 + 垂直居中，与按钮多宽无关。
+    """
+
+    ICON_TEXT_GAP = 4
+
+    def paintEvent(self, ev) -> None:                      # noqa: N802 (Qt 命名)
+        opt = QStyleOptionToolButton()
+        self.initStyleOption(opt)
+
+        p = QPainter(self)
+        # 1) 只画底板：清掉文字/图标/箭头，仍走 CC_ToolButton，
+        #    这样 hover、按下、禁用、焦点框的表现与系统一致。
+        opt.text = ""
+        opt.icon = QIcon()
+        opt.arrowType = Qt.NoArrow
+        self.style().drawComplexControl(QStyle.CC_ToolButton, opt, p, self)
+
+        # 2) 内容居中
+        icon = self.icon()
+        side = self.iconSize().width() if not icon.isNull() else 0
+        tw = self.fontMetrics().horizontalAdvance(self.text())
+        gap = self.ICON_TEXT_GAP if (side and tw) else 0
+        total = side + gap + tw
+
+        x = QRect(0, 0, self.width(), self.height()).x() + int(round((self.width() - total) / 2))
+        if side:
+            pm = icon.pixmap(self.iconSize(), self.devicePixelRatioF())
+            h = self.iconSize().height()
+            if not self.isEnabled():
+                p.setOpacity(0.4)                # 禁用态图标淡化（文字由样式着色）
+            p.drawPixmap(QPointF(x, (self.height() - h) / 2.0), pm)
+            p.setOpacity(1.0)
+            x += side + gap
+
+        if tw:
+            self.style().drawItemText(
+                p, QRect(x, 0, tw, self.height()),
+                Qt.AlignLeft | Qt.AlignVCenter,
+                self.palette(), self.isEnabled(), self.text(), QPalette.ButtonText)
+        p.end()
 
 
 class DeviceBridge(QObject, DeviceEvents):
@@ -221,12 +331,17 @@ class MainWindow(QMainWindow):
         # 顶部工具条：启停 + 配置存取
         tb = QToolBar("主工具栏")
         tb.setMovable(False)
-        # 放大「启动 / 停止 / 保存配置」按钮（约 2 倍可点击面积）：
-        # 工具栏内仅此三个动作，统一通过样式表放大最小高度、字体与内边距。
+        # 三个按钮都是「符号 + 文字」，保持 TextBesideIcon 以防某些主题把
+        # 仅有文字的按钮画成纯图标。
+        tb.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        # 放大「启动 / 停止 / 保存」按钮（约 2 倍可点击面积）：
+        # 工具栏内仅此三个动作，统一通过样式表放大高度、字体与内边距。
+        # 宽度不用 min-width 定——三个按钮文字长度不同（启动 / 停止 / 保存），
+        # 靠 min-width 兜底只能保证「不窄于」，内容更宽者仍会更宽。
+        # 宽度交给 _equalize_tool_buttons 按最大 sizeHint 统一 setFixedSize。
         tb.setStyleSheet(
             "QToolButton {"
             "  min-height: 44px;"
-            "  min-width: 110px;"
             "  font-size: 15px;"
             "  font-weight: 600;"
             "  padding: 4px 14px;"
@@ -237,20 +352,36 @@ class MainWindow(QMainWindow):
             "}"
         )
         self.addToolBar(tb)
+        self.toolbar = tb
 
-        self.act_start = QAction("▶ 启动", self)
+        # 三个按钮统一为「黑白图标 + 文字」：图标由 _apply_tool_icons 按
+        # 「文字墨迹高度 × 1.2」绘制（见 _mono_icon）。
+        # 按钮用 CenterToolButton（而不是 tb.addAction 生成的 QToolButton），
+        # 否则按钮被拉宽后内容会贴左、不居中。
+        self.act_start = QAction("启动", self)
         self.act_start.triggered.connect(self._on_start)
-        tb.addAction(self.act_start)
+        self.btn_start = self._add_tool_button(tb, self.act_start)
 
-        self.act_stop = QAction("■ 停止", self)
+        self.act_stop = QAction("停止", self)
         self.act_stop.triggered.connect(self._on_stop)
-        tb.addAction(self.act_stop)
+        self.btn_stop = self._add_tool_button(tb, self.act_stop)
 
         tb.addSeparator()
 
-        act_save = QAction("保存配置", self)
-        act_save.triggered.connect(self._on_save)
-        tb.addAction(act_save)
+        # 「保存」：悬停提示仍为「保存配置」。默认灰化（未改动配置时无可保存），
+        # 改动后自动亮起，保存完成再灰化。
+        self.act_save = QAction("保存", self)
+        self.act_save.setToolTip("保存配置")
+        self.act_save.setStatusTip("保存配置到 config/app_config.toml")
+        self.act_save.setEnabled(False)
+        self.act_save.triggered.connect(self._on_save)
+        self.btn_save = self._add_tool_button(tb, self.act_save)
+
+        self.tool_buttons = [self.btn_start, self.btn_stop, self.btn_save]
+
+        # 图标尺寸依赖最终字体（样式表 15px），故先建动作、再按 polish 后的
+        # 字体算图标边长并统一按钮尺寸。
+        self._apply_tool_icons()
 
         # ---- 国标广播：勾选框 + 音量提示框（位于「保存配置」右侧）----
         tb.addSeparator()
@@ -277,9 +408,13 @@ class MainWindow(QMainWindow):
         vu_lay.addWidget(self.vu)
         tb.addWidget(vu_wrap)
 
-        # 右下角状态栏：注册状态常驻可见
+        # 状态栏：左侧常驻显示当前可执行文件的完整路径，右侧显示注册状态
         self.sb = QStatusBar()
         self.setStatusBar(self.sb)
+        self.lb_sb_path = QLabel(self._exe_path_text())
+        self.lb_sb_path.setToolTip(self._exe_path_text())
+        self.lb_sb_path.setStyleSheet("color:#888;")
+        self.sb.addWidget(self.lb_sb_path, 1)
         self.lb_sb_state = QLabel("未注册")
         self.sb.addPermanentWidget(self.lb_sb_state)
 
@@ -330,6 +465,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "参数有误", err)
             self.tabs.setCurrentWidget(self.settings)
             return
+
+        # 启动即保存：把当前界面上的配置落盘（相当于自动点一次「保存」）
+        self._on_save(auto=True)
 
         self.log.append("=" * 60)
         self.log.append("[ui] 启动设备…")
@@ -402,6 +540,7 @@ class MainWindow(QMainWindow):
         """
         self.act_start.setEnabled(False)
         self.act_stop.setEnabled(False)
+        self.act_save.setEnabled(False)
         self.settings.set_editable(False)
         self.ck_broadcast.setEnabled(False)
         self.vu.reset()
@@ -459,9 +598,10 @@ class MainWindow(QMainWindow):
         本机 IP 留空时显示「(自动探测)」。
         """
         if running and self.device is not None and self.device.local_ip:
-            return f"{self.device.local_ip}:{self.cfg.local_sip_port}"
+            return f"{self.device.local_ip}:{self.device.local_sip_port}"
         ip = self.settings.ed_local_ip.text().strip()
-        return f"{ip or '(自动探测)'}:{self.settings.sp_sip_port.value()}"
+        port = self.settings._port_value(self.settings.sp_sip_port)
+        return f"{ip or '(自动探测)'}:{port or '(自动选择)'}"
 
     def _refresh_idle_local_addr(self) -> None:
         """未运行时，「本机地址」随「平台接入」页编辑实时刷新。"""
@@ -471,6 +611,8 @@ class MainWindow(QMainWindow):
     def _set_running(self, running: bool) -> None:
         self.act_start.setEnabled(not running)
         self.act_stop.setEnabled(running)
+        # 运行中配置已锁定，保存按钮同步灰化；未运行时按「是否有改动」决定
+        self.act_save.setEnabled((not running) and self._dirty)
         self.settings.set_editable(not running)
         # 「国标广播」是配置项，同样只在停止状态可改；运行中灰化。
         self.ck_broadcast.setEnabled(not running)
@@ -577,6 +719,21 @@ class MainWindow(QMainWindow):
             self.hide()
         super().changeEvent(event)
 
+    def showEvent(self, event) -> None:
+        """首次显示后再校准一次工具栏按钮尺寸。
+
+        样式表/字体在 show 之后由 Qt 完成 polish，个别主题（或换用不同 DPI 的
+        屏幕时）sizeHint 会与构造期不同；再取一次最大 sizeHint 重设固定宽高，
+        保证三个按钮在任何环境下都严格等宽等高。
+        """
+        super().showEvent(event)
+        if getattr(self, "_tb_sized_once", False):
+            return
+        self._tb_sized_once = True
+        # show 之后 Qt 才完成样式表/字体 polish，此时再按真实字体重画图标、
+        # 重设固定尺寸，保证不同 DPI/主题下图标高度与按钮尺寸一致。
+        self._apply_tool_icons()
+
     def _on_reg_state(self, state: RegState, detail: str) -> None:
         # 状态页仍反映设备侧注册事件（无害）；但停止流程中状态栏保持「停止中」，
         # 不随即将销毁的设备的注册态跳动，避免与「未注册=可启动」的不变量冲突。
@@ -600,8 +757,12 @@ class MainWindow(QMainWindow):
 
     def _mark_dirty(self) -> None:
         self._dirty = True
+        # 有改动才允许保存；运行中配置锁定（set_editable(False) 已拦住编辑），
+        # 此时若仍是脏状态则保存按钮保持可用，允许把改动落盘。
+        if self.device is None:
+            self.act_save.setEnabled(True)
 
-    def _on_save(self) -> None:
+    def _on_save(self, *_a, auto: bool = False) -> None:
         self.settings.read_into(self.cfg)
         try:
             save_config(self.cfg, DEFAULT_CONFIG_PATH)
@@ -609,8 +770,85 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "保存失败", self._exc_text(e))
             return
         self._dirty = False
-        self.log.append("[ui] 配置已保存")
+        self.act_save.setEnabled(False)      # 保存完成 → 回到灰化态
+        self.log.append("[ui] 配置已自动保存" if auto else "[ui] 配置已保存")
         self.sb.showMessage("配置已保存", 3000)
+
+    @staticmethod
+    def _exe_path_text() -> str:
+        """状态栏展示的可执行文件完整路径。
+
+        打包态 = exe 自身路径；源码态 = 启动脚本（app/__main__.py 或 main.py）
+        的绝对路径，保证两种运行方式都有意义、且都是「完整路径」。
+        """
+        import sys
+        if getattr(sys, "frozen", False):
+            return os.path.abspath(sys.executable)
+        # 源码态：优先显示实际启动脚本；用 `-c` 等方式启动时 argv[0] 不是
+        # 真实文件，退回解释器路径，避免状态栏出现 "-c" 这类无意义内容。
+        entry = sys.argv[0] if sys.argv else ""
+        if entry and os.path.isfile(entry):
+            return os.path.abspath(entry)
+        return os.path.abspath(sys.executable)
+
+    @staticmethod
+    def _add_tool_button(tb: QToolBar, act: QAction) -> "CenterToolButton":
+        """把动作包装成自绘居中按钮加进工具栏。
+
+        用 ``QToolBar.addWidget``（而非 ``addAction``），才能指定按钮类；
+        按钮通过 ``setDefaultAction`` 跟随动作的文字/图标/使能/tooltip。
+        """
+        btn = CenterToolButton()
+        btn.setDefaultAction(act)
+        tb.addWidget(btn)
+        return btn
+
+    def _apply_tool_icons(self) -> None:
+        """给「启动 / 停止 / 保存」装黑白图标，并统一三个按钮尺寸。
+
+        图标边长 = **文字墨迹高度 × 1.2**（``QFontMetrics.tightBoundingRect``
+        取汉字实际墨迹高度，而不是含行距的 ``height()``，否则图标会明显偏大）。
+        字号由样式表给出，所以必须在按钮 polish 之后取 ``btn.font()``。
+        """
+        tb = getattr(self, "toolbar", None)
+        if tb is None:
+            return
+        acts = (self.act_start, self.act_stop, self.act_save)
+        btns = [b for b in getattr(self, "tool_buttons", [])
+                if isinstance(b, QToolButton)]
+        if len(btns) != 3:
+            return
+        ref = btns[0]
+        ref.ensurePolished()
+        fm = QFontMetrics(ref.font())
+        ink = fm.tightBoundingRect("启").height()
+        if ink <= 0:                        # 字体度量异常时退回 ascent
+            ink = fm.ascent()
+        side = max(12, int(round(ink * 1.2)))
+        for act, kind in zip(acts, ("play", "stop", "save")):
+            act.setIcon(_mono_icon(kind, side))     # 按钮经 defaultAction 自动同步
+        tb.setIconSize(QSize(side, side))
+        self._equalize_tool_buttons(btns)
+
+    @staticmethod
+    def _equalize_tool_buttons(buttons, min_w: int = 120) -> None:
+        """把工具栏里的动作按钮统一成严格等宽等高的方块。
+
+        三个按钮都是「图标 + 文字」，但文字长度不同（启动 / 停止 / 保存），
+        sizeHint 因此天然不等；只靠样式表 ``min-width`` 兜底时，谁的内容更宽
+        谁就更宽，视觉上三个按钮宽窄不一。这里取三者 sizeHint 的最大值
+        （并有 min_w 兜底），逐个 ``setFixedSize``，与字体、DPI、系统主题
+        无关地保持等宽等高。
+        """
+        btns = [b for b in buttons if isinstance(b, QToolButton)]
+        if not btns:
+            return
+        for b in btns:
+            b.ensurePolished()          # 先应用样式表，sizeHint 才是最终值
+        w = max([min_w] + [b.sizeHint().width() for b in btns])
+        h = max([44] + [b.sizeHint().height() for b in btns])
+        for b in btns:
+            b.setFixedSize(w, h)
 
     def _validate(self, cfg: AppConfig) -> str:
         if not cfg.server_ip:
@@ -628,7 +866,7 @@ class MainWindow(QMainWindow):
         if cfg.broadcast_enabled:
             if not (1 <= cfg.broadcast_media_port <= 65535):
                 return "国标广播的音频接收端口必须在 1~65535 之间。"
-            if cfg.broadcast_media_port == cfg.local_media_port:
+            if cfg.local_media_port and cfg.broadcast_media_port == cfg.local_media_port:
                 return ("国标广播的音频接收端口与「本机媒体端口」冲突"
                         f"（均为 {cfg.local_media_port}），请改为不同端口。")
         if not os.path.exists(cfg.ps_file_abs()):

@@ -94,10 +94,36 @@ def test_type_coercion_and_slash():
     _t("bool 还原", isinstance(back.broadcast_enabled, bool))
 
 
+def test_broken_empty_assignment_recovers():
+    """空赋值（`local_sip_port = `）不能把整份配置搞挂。
+
+    历史 bug：端口留空保存时曾写出空赋值，导致下次启动 tomlkit 解析直接
+    抛异常、程序起不来。load_config / save_config 都做修复：按字段类型补
+    默认值，端口补成 0（正好等于「留空 = 自动选端口」）。
+    """
+    path = os.path.join(tempfile.mkdtemp(), "app_config.toml")
+    save_config(AppConfig(), path)
+    raw = open(path, encoding="utf-8").read()
+    # 人为破坏：把两个端口的赋值清空，再加一个 None
+    broken = (raw.replace("local_sip_port = 5060", "local_sip_port = ")
+                 .replace("local_media_port = 15060", "local_media_port = None"))
+    open(path, "w", encoding="utf-8").write(broken)
+    cfg = load_config(path)
+    _t("空赋值可被修复并读取", cfg is not None)
+    _t("空端口还原为 0（自动选端口）", cfg.local_sip_port == 0, cfg.local_sip_port)
+    _t("None 端口还原为 0", cfg.local_media_port == 0, cfg.local_media_port)
+    # 修复后保存应成功，且不再产生空赋值
+    save_config(cfg, path)
+    again = open(path, encoding="utf-8").read()
+    _t("保存后无空赋值", "local_sip_port = \n" not in again)
+    _t("保存后可再次读取", load_config(path).local_sip_port == 0)
+
+
 if __name__ == "__main__":
     print("===== config TOML 专项测试 =====", flush=True)
     test_template_has_comments_and_all_fields()
     test_save_preserves_comments()
     test_json_migration()
     test_type_coercion_and_slash()
+    test_broken_empty_assignment_recovers()
     print("\nALL_CONFIG_TOML_OK", flush=True)

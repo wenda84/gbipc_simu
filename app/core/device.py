@@ -27,6 +27,8 @@ from ..sip.stack import SipEvents
 from ..sip.pjsip_stack import PjsipStack
 from ..media.ps_streamer import PsStreamer
 from ..media.broadcast_session import BroadcastSession
+from ..media.mp4_source import prepare_media_source, Mp4SourceError, warm_media_cache
+from .netutil import find_free_port, is_port_free
 from . import manscdp
 from .applog import log_event
 from .config import AppConfig, detect_local_ip
@@ -56,6 +58,8 @@ class CallContext:
     streamer: Optional[PsStreamer] = None
     kind: str = "play"                 # "play"（点播推流，UAS）| "broadcast"（广播收流，UAC）
     broadcast_source: str = ""         # 广播场景：语音流发送者 ID（通知中的 SourceID）
+    media_temp_path: Optional[str] = None  # MP4 转封装产生的临时 PS 路径（.ps 源为 None）
+    media_port: int = 0                # 本次呼叫实际使用的本机媒体端口（配置留空时自动选）
 
 
 class DeviceEvents:
@@ -102,6 +106,8 @@ class GbDevice(SipEvents):
         # 让平台在设备已退出后仍保留在线状态。
         self._ever_registered = False
         self.local_ip = cfg.local_ip
+        # 实际生效的本机 SIP 端口：配置留空（0）时在 start() 里自动选一个空闲端口
+        self.local_sip_port = cfg.local_sip_port
         self._ka_sn = 0                    # Keepalive SN 递增
         self._ka_pending = 0               # 已发未回应的心跳数
         self._last_ka_sent = 0.0
@@ -136,7 +142,19 @@ class GbDevice(SipEvents):
         # libInit 内部的 pj_init 即把主线程注册给 pjsua。worker 线程在 _run()
         # 开头经 self._sip.register_thread() 自行注册，其上的 set_registration
         # / shutdown 等 pjsua 调用因此安全（否则触发 os_core_win32.c:658 断言）。
-        self._sip.start(self.local_ip, self.cfg.local_sip_port)
+        # 「本地 SIP 端口」留空（0）→ 自动选一个空闲端口，并把实际值记录下来
+        # 供状态栏/日志显示（平台侧看到的就是这个端口）。
+        sip_port = self.cfg.local_sip_port or find_free_port(udp=True)
+        if self.cfg.local_sip_port and not is_port_free(sip_port, udp=True):
+            # 固定端口被占用（旧实例残留 / 其它程序）：直接改用空闲端口，
+            # 否则 transportCreate 会失败导致整个启动失败。
+            free = find_free_port(udp=True)
+            self._log(f"本地 SIP 端口 {sip_port} 已被占用，改用空闲端口 {free}")
+            sip_port = free
+        self.local_sip_port = sip_port
+        if not self.cfg.local_sip_port:
+            self._log(f"本地 SIP 端口留空，自动选择空闲端口 {sip_port}")
+        self._sip.start(self.local_ip, sip_port)
         self._sip.create_account(
             device_uri=self.cfg.device_uri,
             registrar_uri=self.cfg.server_uri,
@@ -148,11 +166,17 @@ class GbDevice(SipEvents):
         self._set_state(RegState.REGISTERING)
         self._reg_pending_since = time.monotonic()
         self._sip.set_registration(True)
-        self._log(f"注册 -> {self.cfg.server_uri} (本机 {self.local_ip}:{self.cfg.local_sip_port})")
+        self._log(f"注册 -> {self.cfg.server_uri} (本机 {self.local_ip}:{sip_port})")
         # 启动 worker 处理业务事件（不直接调用 pjsua API）
         self._stop.clear()
         self._worker = threading.Thread(target=self._run, name="gb-device", daemon=True)
         self._worker.start()
+        # 预热媒体源：MP4→PS 是整文件转换（大文件约 2~3s），提前在后台做好，
+        # 避免平台点播（INVITE/ACK 之后）要空等数秒才收到第一个 RTP 包。
+        try:
+            warm_media_cache(self.cfg.ps_file_abs(), self._log)
+        except Exception as e:
+            self._log(f"[media] 媒体预热未启动: {e}")
 
     def stop(self) -> bool:
         """停止设备并释放 pjsua 资源。返回协议栈是否已**彻底销毁**。
@@ -585,12 +609,23 @@ class GbDevice(SipEvents):
             return
 
         proto = "tcp" if offer.is_tcp else "udp"
-        answer = build_answer(self.cfg.device_id, self.local_ip,
-                              self.cfg.local_media_port, offer)
+        # 「本机媒体端口」留空（0）→ 每次呼叫各自选一个空闲端口，避免多路呼叫抢同一端口。
+        # 配置了固定端口但已被占用时同样改用空闲端口——SDP 里通告的必须是**真正能用**
+        # 的端口，否则平台按 SDP 连过来会连不上（或我们绑定失败后源端口与 SDP 不符）。
+        use_udp = proto == "udp"
+        media_port = self.cfg.local_media_port
+        if not media_port:
+            media_port = find_free_port(udp=use_udp)
+        elif not is_port_free(media_port, udp=use_udp):
+            picked = find_free_port(udp=use_udp)
+            self._log(f"本机媒体端口 {media_port} 已被占用，本次呼叫改用空闲端口 {picked}")
+            media_port = picked
+        answer = build_answer(self.cfg.device_id, self.local_ip, media_port, offer)
         self._calls[ev.call_id] = CallContext(call_id=ev.call_id, offer=offer,
-                                              answer_sdp=answer, subject=ev.subject)
+                                              answer_sdp=answer, subject=ev.subject,
+                                              media_port=media_port)
         self._sip.answer_call(ev.call_id, 200, answer)
-        self._log(f"已回 200 OK（{proto.upper()} 模式，本机媒体端口 {self.cfg.local_media_port}）")
+        self._log(f"已回 200 OK（{proto.upper()} 模式，本机媒体端口 {media_port}）")
         self.out.on_call_state(f"呼叫建立中 ({proto.upper()})")
 
     def _on_call_state(self, ev: CallStateEvent) -> None:
@@ -614,32 +649,64 @@ class GbDevice(SipEvents):
             return
         cfg = self.cfg
         proto = "tcp" if ctx.offer.is_tcp else "udp"
+        # 媒体源准备：.ps 直接用；.mp4 经内置 ffmpeg(libav) 转封装为临时 PS（非 AAC 音频丢弃）。
+        # 失败时直接挂断，不让呼叫卡在 CONFIRMED 却无流。
         try:
-            streamer = PsStreamer(
-                protocol=proto,
-                dest_ip=ctx.offer.dest_ip,
-                dest_port=ctx.offer.dest_port,
-                ssrc=ctx.offer.ssrc or "0",
-                local_port=0 if proto == "tcp" else cfg.local_media_port,
-                payload_type=(ctx.offer.media.payloads[0]
-                              if ctx.offer.media.payloads else 96),
-                on_log=self._log,
-                on_stats=lambda s: self.out.on_stream_stats(
-                    f"RTP {s['rtp']} 包 / {s['bytes'] / 1024:.0f} KB / {s['loops']} 轮"),
-            )
-            play_times = 0 if cfg.loop_play else 1
-            streamer.start_file(cfg.ps_file_abs(), play_times)
-            ctx.streamer = streamer
-            self.out.on_call_state(f"推流中 -> {ctx.offer.dest_ip}:{ctx.offer.dest_port} ({proto.upper()})")
-        except Exception as e:
-            self._log(f"启动推流失败: {e}")
+            ps_path, is_temp = prepare_media_source(cfg.ps_file_abs(), self._log)
+        except Mp4SourceError as e:
+            self._log(f"媒体源准备失败: {e}")
             self._sip.hangup_call(ctx.call_id)
+            return
+        ctx.media_temp_path = ps_path if is_temp else None
+        # TCP 主动（setup:active）时，SDP 里通告的媒体端口就是本端发起连接的源端口。
+        # 之前 TCP 分支固定用 0（临时端口），抓包可见 SDP 声明 15088、实际却从
+        # 49751 发出，端口与 SDP 不一致，严格校验源端口的平台会判为非法流。
+        want_port = ctx.media_port or cfg.local_media_port
+        port_candidates = [want_port, 0] if want_port else [0]
+        last_err = None
+        for lp in port_candidates:
+            try:
+                streamer = PsStreamer(
+                    protocol=proto,
+                    dest_ip=ctx.offer.dest_ip,
+                    dest_port=ctx.offer.dest_port,
+                    ssrc=ctx.offer.ssrc or "0",
+                    local_port=lp,
+                    payload_type=(ctx.offer.media.payloads[0]
+                                  if ctx.offer.media.payloads else 96),
+                    on_log=self._log,
+                    on_stats=lambda s: self.out.on_stream_stats(
+                        f"RTP {s['rtp']} 包 / {s['bytes'] / 1024:.0f} KB / {s['loops']} 轮"),
+                )
+                play_times = 0 if cfg.loop_play else 1
+                streamer.start_file(ps_path, play_times)
+                ctx.streamer = streamer
+                break
+            except Exception as e:
+                last_err = e
+                if lp:
+                    self._log(f"[media] 以本机端口 {lp} 推流失败（{e}），改用临时端口重试")
+                continue
+        if ctx.streamer is None:
+            self._log(f"启动推流失败: {last_err}")
+            self._sip.hangup_call(ctx.call_id)
+            return
+        self.out.on_call_state(f"推流中 -> {ctx.offer.dest_ip}:{ctx.offer.dest_port} ({proto.upper()})")
 
     def _stop_stream(self, call_id: int) -> None:
         ctx = self._calls.pop(call_id, None)
         if ctx is not None and ctx.streamer is not None:
             ctx.streamer.stop()
             self._log("推流已停止")
+        # 清理 MP4 转封装产生的临时 PS 文件（.ps 源无此文件）
+        if ctx is not None and ctx.media_temp_path:
+            try:
+                if os.path.exists(ctx.media_temp_path):
+                    os.remove(ctx.media_temp_path)
+                self._log(f"[media] 已清理临时 PS: {ctx.media_temp_path}")
+            except OSError as e:
+                self._log(f"[media] 清理临时 PS 失败: {e}")
+            ctx.media_temp_path = None
 
     # ---------------- 国标广播（语音流接收者，9.12.1） ----------------
 

@@ -72,6 +72,24 @@ excludes = [
     "tkinter", "unittest", "pydoc", "doctest", "lib2to3", "pytest",
 ]
 
+# ---------------------------------------------------------------- 内置 ffmpeg(libav)
+# MP4 -> PS 转封装使用仓库内置的 libav（PyAV wheel，位于 libs/av/，含 ffmpeg 的
+# libav*.dll）。业务代码在 app/media/mp4_source.py 的 _load_av() 中经 sys.path 注入
+# 加载该内置副本，不依赖本机安装 ffmpeg（满足「自下载 ffmpeg 并内置仓库」的需求）。
+# 因此把整个 libs/av 树作为数据文件打进包体（落点 _internal/libs/av）。其中
+# av.libs/ 与 av/ 必须保持「兄弟目录」布局——av/__init__.py 的 delvewheel 补丁会在
+# 导入时把 av.libs 加入 DLL 搜索路径，从而正确加载 libav*.dll。
+# 同时把 av 显式加入 excludes：若构建机后续装了 PyAV，避免被 PyInstaller 从
+# site-packages 收集（版本可能不一致），强制运行期一律用我们的内置副本。
+_av_vendor = os.path.join(ROOT, "libs", "av")
+if os.path.isdir(_av_vendor):
+    datas.append((_av_vendor, "libs/av"))
+else:
+    raise SystemExit(
+        "[build] 未找到内置 ffmpeg(libav) 目录: {}\n"
+        "        请先按《GB28181_支持mp4发送功能设计.md》下载 PyAV wheel 并解压到 libs/av。".format(_av_vendor))
+excludes.append("av")
+
 a = Analysis(
     [os.path.join(ROOT, "app", "__main__.py")],
     pathex=[ROOT],

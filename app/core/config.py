@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import sys
 import typing
@@ -33,7 +34,7 @@ DEFAULT_CONFIG_PATH = os.path.join(USER_BASE_DIR, "config", "app_config.toml")
 class AppConfig:
     # ---- 本地 ----
     local_ip: str = ""                 # 本机 IP；空 = 启动时按到平台的路由自动探测
-    local_sip_port: int = 5060         # 本地 SIP 端口（UDP）
+    local_sip_port: int = 5060         # 本地 SIP 端口（UDP）；0 = 启动时自动选空闲端口
     # ---- 平台 ----
     server_id: str = "34020100002000000178"   # SIP 服务器 ID（20 位）
     server_domain: str = "172.220.0.178:5080"  # SIP 服务器域
@@ -50,9 +51,11 @@ class AppConfig:
     keepalive_timeout_count: int = 3    # 最大心跳超时次数
     unregister_grace: float = 2.0       # 注销 REGISTER 发出后等待送达的时间（秒）
     # ---- 媒体 ----
-    local_media_port: int = 15060       # 本机媒体端口（UDP 源端口 / TCP 本地端口）
+    local_media_port: int = 15060       # 本机媒体端口（UDP 源端口 / TCP 本地端口）；0 = 自动选空闲端口
     ps_file: str = os.path.join("resource", "ps_samples", "HK264.ps")
     loop_play: bool = True              # 循环播放
+    # 注：MP4→PS 转封装使用仓库内置的 ffmpeg 库(libav/PyAV，见 libs/av)，不再依赖
+    # 外部 ffmpeg 可执行文件或系统 PATH，故无 ffmpeg_path 配置项。
     # ---- 国标广播（语音广播，本工具为语音流接收者）----
     broadcast_enabled: bool = False     # UI 勾选框；仅停止态可改
     broadcast_media_port: int = 15062   # 本机音频收流端口（UDP 绑定 / TCP 监听）
@@ -121,7 +124,7 @@ class AppConfig:
 _CONFIG_SECTIONS = [
     ("local", [
         ("local_ip", "本机 IP；空字符串 = 启动时按到平台的路由自动探测"),
-        ("local_sip_port", "本地 SIP 端口（UDP）"),
+        ("local_sip_port", "本地 SIP 端口（UDP）；留空/0 = 启动时自动选择空闲端口"),
     ]),
     ("server", [
         ("server_id", "SIP 服务器 ID（20 位）"),
@@ -142,8 +145,8 @@ _CONFIG_SECTIONS = [
         ("unregister_grace", "注销 REGISTER 发出后等待送达的时间（秒）"),
     ]),
     ("media", [
-        ("local_media_port", "本机媒体端口（UDP 源端口 / TCP 本地端口）"),
-        ("ps_file", "点播 PS 媒体流文件（相对工程根 / 安装根的路径）"),
+        ("local_media_port", "本机媒体端口（UDP 源端口 / TCP 本地端口）；留空/0 = 每次呼叫自动选空闲端口"),
+        ("ps_file", "点播媒体文件（.ps 素材或 .mp4，相对工程根 / 安装根的路径）"),
         ("loop_play", "是否循环播放"),
     ]),
     ("broadcast", [
@@ -246,13 +249,49 @@ def _unwrap(v):
     return v.unwrap() if hasattr(v, "unwrap") else v
 
 
+_EMPTY_ASSIGN_RE = re.compile(r"^(?P<lead>[ \t]*)(?P<key>[A-Za-z_][\w-]*)\s*=\s*"
+                               r"(?P<bad>None)?\s*(?:#.*)?$", re.M)
+
+
+def _repair_empty_assignments(text: str) -> str:
+    """把 ``key =``（右侧为空，或手写成 ``None``）补成合法值再做解析。
+
+    历史 bug：端口留空保存时曾把 ``local_sip_port = `` 写进 TOML，导致**下次
+    启动直接解析失败**（整份配置报废）。这里按字段类型补默认值（int→0、
+    bool→false、其它→空串），让配置文件即使被手工改坏也能正常启动；
+    端口补成 0 恰好就是「留空 = 自动选空闲端口」的语义。
+    """
+    def _fix(m: "re.Match") -> str:
+        key = m.group("key")
+        ann = _FIELD_TYPES.get(key)
+        if ann is bool:
+            val = "false"
+        elif ann in (int, float):
+            val = "0"
+        else:
+            val = '""'
+        return f"{m.group('lead')}{key} = {val}"
+
+    out = []
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        m = _EMPTY_ASSIGN_RE.match(body)
+        if m:
+            line = _fix(m) + line[len(body):]
+        out.append(line)
+    return "".join(out)
+
+
 def _set_typed(cfg: "AppConfig", key: str, raw) -> None:
     """按 dataclass 字段注解把读出的原生值强制转为正确类型。"""
     ann = _FIELD_TYPES.get(key)
     if ann is bool:
         setattr(cfg, key, bool(raw))
     elif ann is int:
-        setattr(cfg, key, int(raw))
+        try:
+            setattr(cfg, key, int(raw))
+        except (TypeError, ValueError):
+            pass            # 值不合法（如空串）：保留 dataclass 默认值
     elif ann is float:
         setattr(cfg, key, float(raw))
     else:
@@ -290,7 +329,10 @@ def load_config(path: str = DEFAULT_CONFIG_PATH) -> "AppConfig":
         return AppConfig()
 
     with open(path, "r", encoding="utf-8") as f:
-        doc = tomlkit.parse(f.read())
+        raw_text = f.read()
+    # 容错：空赋值（如 `local_sip_port = `）会让整份 TOML 解析失败，
+    # 先补成合法值，避免「配置被改坏 → 程序起不来」。
+    doc = tomlkit.parse(_repair_empty_assignments(raw_text))
     cfg = AppConfig()
     for sec_name, fields in _CONFIG_SECTIONS:
         tbl = doc.get(sec_name)
@@ -307,7 +349,9 @@ def save_config(cfg: "AppConfig", path: str = DEFAULT_CONFIG_PATH) -> None:
     if os.path.exists(path):
         # 已存在：就地更新值，完整保留注释、排版与分组结构
         with open(path, "r", encoding="utf-8") as f:
-            doc = tomlkit.parse(f.read())
+            # 同 load_config：旧文件若被写成空赋值，先修复再解析，
+            # 否则「保存」会因解析失败直接报错，用户没法把配置救回来。
+            doc = tomlkit.parse(_repair_empty_assignments(f.read()))
     else:
         # 缺失：写入带注释的分组模板
         doc = tomlkit.parse(_build_template(cfg))

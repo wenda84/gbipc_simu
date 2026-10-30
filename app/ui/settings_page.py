@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel,
     QLineEdit, QPushButton, QScrollArea, QSpinBox, QVBoxLayout, QWidget,
@@ -110,12 +111,16 @@ class SettingsPage(QWidget):
         lay.setContentsMargins(16, 14, 16, 14)
         lay.setSpacing(12)
 
-        lay.addWidget(self._build_local_group())
+        # 分组顺序：平台 → 用户 → 媒体 → 设备信息 → 注册/心跳 → 本地。
+        # 「平台/用户」是必填的主配置；「媒体」是点播时最常调的两项（媒体文件、
+        # 循环播放）；「设备信息」随媒体之后（应答平台查询时上报的内容）；
+        # 「本地」的 IP / 端口多数情况留空自动探测，故放到最后。
         lay.addWidget(self._build_platform_group())
         lay.addWidget(self._build_device_group())
-        lay.addWidget(self._build_reg_group())
         lay.addWidget(self._build_media_group())
         lay.addWidget(self._build_info_group())
+        lay.addWidget(self._build_reg_group())
+        lay.addWidget(self._build_local_group())
         lay.addStretch(1)
 
         # 各分组各自持有 QFormLayout，标签列宽度按组内最宽标签自适应，
@@ -155,10 +160,8 @@ class SettingsPage(QWidget):
         self.ed_local_ip.textChanged.connect(self._on_change)
         f.addRow("本机 IP", self.ed_local_ip)
 
-        self.sp_sip_port = FocusSpinBox()
-        self.sp_sip_port.setRange(1, 65535)
-        self.sp_sip_port.setValue(self._cfg.local_sip_port)
-        self.sp_sip_port.valueChanged.connect(self._on_change)
+        # 端口支持留空：留空（None/0）= 程序启动时自动选择空闲端口
+        self.sp_sip_port = self._port_edit(self._cfg.local_sip_port)
         f.addRow("本地 SIP 端口", self.sp_sip_port)
 
         self.ed_transport = QComboBox()
@@ -166,10 +169,7 @@ class SettingsPage(QWidget):
         self.ed_transport.setEnabled(False)      # 本期仅 UDP 信令
         f.addRow("传输协议", self.ed_transport)
 
-        self.sp_media_port = FocusSpinBox()
-        self.sp_media_port.setRange(1, 65535)
-        self.sp_media_port.setValue(self._cfg.local_media_port)
-        self.sp_media_port.valueChanged.connect(self._on_change)
+        self.sp_media_port = self._port_edit(self._cfg.local_media_port)
         f.addRow("本机媒体端口", self.sp_media_port)
 
         return box
@@ -288,17 +288,23 @@ class SettingsPage(QWidget):
 
         wrap = QWidget()
         wrap.setLayout(row)
-        f.addRow("PS 流文件", wrap)
+        f.addRow("媒体文件", wrap)
 
+        # 「循环播放」与提示文案同行：勾选框靠左，提示靠最右
+        loop_row = QHBoxLayout()
+        loop_row.setContentsMargins(0, 0, 0, 0)
         self.ck_loop = QCheckBox("循环播放")
         self.ck_loop.setChecked(self._cfg.loop_play)
         self.ck_loop.toggled.connect(self._on_change)
-        f.addRow("", self.ck_loop)
-
-        hint = QLabel("素材可换为含视频 PES 的 PS 文件；发送器会自动识别音/视频帧。")
+        loop_row.addWidget(self.ck_loop)
+        loop_row.addStretch(1)
+        hint = QLabel("支持.ps和.mp4媒体文件")
         hint.setStyleSheet("color:#888;")
-        hint.setWordWrap(True)
-        f.addRow("", hint)
+        hint.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        loop_row.addWidget(hint)
+        loop_wrap = QWidget()
+        loop_wrap.setLayout(loop_row)
+        f.addRow("", loop_wrap)
 
         return box
 
@@ -322,11 +328,14 @@ class SettingsPage(QWidget):
         self.ed_firmware.textChanged.connect(self._on_change)
         f.addRow("固件版本", self.ed_firmware)
 
+        # 通道号：界面上不暴露（IPC 固定通道 1）。控件仍保留并照常读写配置，
+        # 只是把该行隐藏——要恢复显示只需把下面这行 _hide_row 去掉。
         self.sp_channel = FocusSpinBox()
         self.sp_channel.setRange(1, 256)
         self.sp_channel.setValue(self._cfg.channel)
         self.sp_channel.valueChanged.connect(self._on_change)
         f.addRow("通道号", self.sp_channel)
+        self._hide_row(f, self.sp_channel)
 
         self.ed_civil = QLineEdit(self._cfg.civil_code)
         self.ed_civil.textChanged.connect(self._on_change)
@@ -335,6 +344,43 @@ class SettingsPage(QWidget):
         return box
 
     # ---------------- 行为 ----------------
+
+    @staticmethod
+    def _hide_row(f: QFormLayout, field) -> None:
+        """隐藏表单里某一行（标签 + 控件），但控件本身仍可读写。
+
+        用 ``QFormLayout.setRowVisible``（Qt ≥ 6.4）；低版本退回逐个 hide()，
+        隐藏后该行不参与布局，不会留下空白。
+        """
+        if hasattr(f, "setRowVisible"):
+            try:
+                f.setRowVisible(field, False)
+                return
+            except Exception:
+                pass
+        label = f.labelForField(field)
+        if label is not None:
+            label.hide()
+        field.hide()
+
+    def _port_edit(self, value: int) -> QLineEdit:
+        """构造「可留空」的端口输入框（0 显示为空，留空即自动选端口）。"""
+        ed = QLineEdit()
+        ed.setValidator(QIntValidator(1, 65535, ed))
+        ed.setPlaceholderText("留空则自动选择空闲端口")
+        ed.setMaxLength(5)
+        ed.textChanged.connect(self._on_change)
+        self._set_port(ed, value)
+        return ed
+
+    @staticmethod
+    def _set_port(ed: QLineEdit, value: int) -> None:
+        ed.setText("" if not value else str(int(value)))
+
+    @staticmethod
+    def _port_value(ed: QLineEdit) -> int:
+        text = ed.text().strip()
+        return int(text) if text.isdigit() else 0
 
     def _list_ps_files(self) -> list[str]:
         out = []
@@ -361,7 +407,8 @@ class SettingsPage(QWidget):
             start_dir = _PS_DIR if os.path.isdir(_PS_DIR) else USER_BASE_DIR
 
         path, _ = QFileDialog.getOpenFileName(
-            self, "选择 PS 流文件", start_dir, "PS 流 (*.ps);;所有文件 (*)")
+            self, "选择媒体文件", start_dir,
+            "媒体文件 (*.ps *.mp4);;PS 流 (*.ps);;MP4 (*.mp4);;所有文件 (*)")
         if path:
             self.cb_ps_file.setCurrentText(path.replace("\\", "/"))
 
@@ -373,7 +420,7 @@ class SettingsPage(QWidget):
     def read_into(self, cfg: AppConfig) -> AppConfig:
         """把界面上的值写回 cfg 并返回（就地修改）。"""
         cfg.local_ip = self.ed_local_ip.text().strip()
-        cfg.local_sip_port = self.sp_sip_port.value()
+        cfg.local_sip_port = self._port_value(self.sp_sip_port)
         cfg.server_id = self.ed_server_id.text().strip()
         cfg.server_domain = self.ed_server_domain.text().strip()
         cfg.server_ip = self.ed_server_ip.text().strip()
@@ -385,7 +432,7 @@ class SettingsPage(QWidget):
         cfg.register_retry_interval = self.sp_retry.value()
         cfg.keepalive_interval = self.sp_ka_interval.value()
         cfg.keepalive_timeout_count = self.sp_ka_timeout.value()
-        cfg.local_media_port = self.sp_media_port.value()
+        cfg.local_media_port = self._port_value(self.sp_media_port)
         cfg.ps_file = self.cb_ps_file.currentText().strip()
         cfg.loop_play = self.ck_loop.isChecked()
         cfg.device_name = self.ed_name.text().strip()
@@ -400,7 +447,7 @@ class SettingsPage(QWidget):
         """把 cfg 的值刷到界面（加载配置后调用）。"""
         self._cfg = cfg
         self.ed_local_ip.setText(cfg.local_ip)
-        self.sp_sip_port.setValue(cfg.local_sip_port)
+        self._set_port(self.sp_sip_port, cfg.local_sip_port)
         self.ed_server_id.setText(cfg.server_id)
         self.ed_server_domain.setText(cfg.server_domain)
         self.ed_server_ip.setText(cfg.server_ip)
@@ -412,7 +459,7 @@ class SettingsPage(QWidget):
         self.sp_retry.setValue(cfg.register_retry_interval)
         self.sp_ka_interval.setValue(cfg.keepalive_interval)
         self.sp_ka_timeout.setValue(cfg.keepalive_timeout_count)
-        self.sp_media_port.setValue(cfg.local_media_port)
+        self._set_port(self.sp_media_port, cfg.local_media_port)
         self.cb_ps_file.setCurrentText(cfg.ps_file)
         self.ck_loop.setChecked(cfg.loop_play)
         self.ed_name.setText(cfg.device_name)
