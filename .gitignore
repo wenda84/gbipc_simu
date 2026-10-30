@@ -11,4 +11,4 @@ dist/
 # 新 clone 需自行准备：安装 Python 3.12 并建 runtime/venv312（见 docs/工程说明.md）
 runtime/
 # tools/pjproject-* = 第三方 SIP 源码树（约 139MB），仅构建期参考用
-tools/pjproject-*/
+tools/pjproject-*
