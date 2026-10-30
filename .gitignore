@@ -5,8 +5,3 @@ dist/
 *__pycache__/
 *pyc
 *.log
-
-# 第三方源码：磁盘上保留，不入库
-# tools/pjproject-* = 第三方 SIP 源码树（约 139MB），仅在 --rebuild 重编译 pjsua2 时需要
-# 注意：runtime/（内嵌 CPython + venv312）**必须入库**，保证 clone 后离线直接 build.bat
-tools/pjproject-*
